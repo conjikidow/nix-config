@@ -21,7 +21,7 @@ This means: bring the local repository (or repositories) back to a clean baselin
    If it differs, report the branch and leave both it and its worktree in place.
 5. Remove leftover temporary files created for the PR, such as `.pr-body.md`,
    from the main worktree and from any worktree created for this work.
-6. Remove those worktrees (`git worktree remove <path>`, without `--force`), if applicable.
+6. Remove the worktrees of the branches that passed step 4 (`git worktree remove <path>`, without `--force`), if applicable.
    A branch still checked out in a worktree cannot be deleted, even with `-D`.
    If the removal is refused, the worktree still holds modified or untracked files:
    report them and leave the worktree and its branch in place.

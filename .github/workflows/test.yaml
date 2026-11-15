@@ -1,0 +1,158 @@
+name: Test
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  determine-changes:
+    name: Determine changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      recipe: ${{ steps.changed-files.outputs.recipe_any_modified }}
+      test: ${{ steps.changed-files.outputs.test_any_modified }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          output_renamed_files_as_deleted_and_added: true
+          files_yaml: |
+            recipe:
+              - 'recipes/**'
+              - '!recipes/README.md'
+              - '!recipes/*/README.md'
+            test:
+              - 'home-modules/**'
+              - 'flake.nix'
+              - 'flake.lock'
+              - '.github/workflows/test.yaml'
+
+  check-flake:
+    name: Check the flake
+    needs: determine-changes
+    if: needs.determine-changes.outputs.test == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the flake
+        run: nix flake check --all-systems --show-trace
+
+  check-recipes:
+    name: Check the recipes
+    needs: determine-changes
+    if: >-
+      github.repository == 'ut-issl/personal-nix-config-template'
+      && (needs.determine-changes.outputs.recipe == 'true' || needs.determine-changes.outputs.test == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the recipes
+        run: nix flake check ./recipes --all-systems --no-write-lock-file --show-trace
+
+  repository-based:
+    name: Test config-repository-based setup
+    needs: determine-changes
+    if: needs.determine-changes.outputs.test == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - ubuntu-26.04
+        flake-target:
+          - user
+          - user-desktop
+    permissions:
+      contents: read
+    uses: ut-issl/issl-environment/.github/workflows/test-config-repository.yaml@70a25853fc183ea4c33e2392de4596d465d296c4 # v0.14.1
+    with:
+      os: ${{ matrix.os }}
+      flake-target: ${{ matrix.flake-target }}
+      common-repository: ut-issl/issl-environment
+      common-ref: '70a25853fc183ea4c33e2392de4596d465d296c4' # v0.14.1
+      user-repository: ${{ github.repository }}
+      user-ref: ${{ github.sha }}
+      override-issl-input: false
+      timeout-minutes: 10
+
+  check-test-results:
+    name: Check test results
+    needs:
+      - determine-changes
+      - check-flake
+      - check-recipes
+      - repository-based
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check the job results
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          failed_jobs="$(jq --raw-output '
+              to_entries[]
+              | select(.value.result != "success" and .value.result != "skipped")
+              | "\(.key) finished with \(.value.result)."
+            ' <<< "${JOB_RESULTS}")"
+          if [[ -n ${failed_jobs} ]]; then
+            while IFS= read -r failed_job; do
+              echo "::error title=check-test-results::${failed_job}"
+            done <<< "${failed_jobs}"
+            exit 1
+          fi

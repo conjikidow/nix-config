@@ -1,0 +1,401 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:best-practices',
+    ':semanticCommitTypeAll(build)',
+  ],
+  mode: 'silent',
+  minimumReleaseAge: '3 days',
+  labels: [
+    'automated',
+    'dependencies',
+  ],
+  'git-submodules': {
+    enabled: true,
+  },
+  nix: {
+    enabled: true,
+  },
+  pep723: {
+    managerFilePatterns: [
+      '/^\\.agents/skills/.*\\.py$/',
+    ],
+  },
+  'pre-commit': {
+    enabled: true,
+  },
+  customManagers: [
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.ACTIONLINT_VERSION)].{ "currentValue": env.ACTIONLINT_VERSION }',
+      ],
+      depNameTemplate: 'rhysd/actionlint',
+      datasourceTemplate: 'go',
+      packageNameTemplate: 'github.com/rhysd/actionlint',
+      extractVersionTemplate: '^v(?<version>.+)$',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$substringBefore(uses, "@") = "commitizen-tools/setup-cz"].{ "currentValue": with.version }',
+      ],
+      depNameTemplate: 'commitizen-tools/commitizen',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'commitizen',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^README\\.md$/',
+      ],
+      matchStrings: [
+        'issl-environment/releases/download/(?<currentValue>v[^/\\s]+)/bootstrap-host\\.sh',
+        'issl-environment/blob/(?<currentValue>v[^/\\s]+)/',
+      ],
+      depNameTemplate: 'ut-issl/issl-environment',
+      datasourceTemplate: 'github-tags',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github/workflows/test\\.ya?ml$/',
+      ],
+      matchStrings: [
+        "common-ref: '(?<currentDigest>[a-f0-9]{40})' # (?<currentValue>v[^\\s]+)",
+      ],
+      depNameTemplate: 'ut-issl/issl-environment',
+      datasourceTemplate: 'github-tags',
+      versioningTemplate: 'semver',
+      autoReplaceStringTemplate: "common-ref: '{{{newDigest}}}' # {{{newValue}}}",
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^flake\\.nix$/',
+      ],
+      matchStrings: [
+        'github:ut-issl/issl-environment/(?<currentValue>v[^"\\s]+)',
+      ],
+      depNameTemplate: 'ut-issl/issl-environment',
+      datasourceTemplate: 'github-tags',
+      versioningTemplate: 'semver',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.JSON5_VERSION)].{ "currentValue": env.JSON5_VERSION }',
+      ],
+      depNameTemplate: 'json5/json5',
+      datasourceTemplate: 'npm',
+      packageNameTemplate: 'json5',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$substringBefore(uses, "@") = "lycheeverse/lychee-action"].{ "currentValue": with.lycheeVersion }',
+      ],
+      depNameTemplate: 'lycheeverse/lychee',
+      datasourceTemplate: 'github-releases',
+      extractVersionTemplate: '^lychee-(?<version>v\\d+\\.\\d+\\.\\d+)$',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.RENOVATE_VERSION)].{ "currentValue": env.RENOVATE_VERSION }',
+      ],
+      depNameTemplate: 'renovatebot/renovate',
+      datasourceTemplate: 'npm',
+      packageNameTemplate: 'renovate',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.RUFF_VERSION)].{ "currentValue": env.RUFF_VERSION }',
+      ],
+      depNameTemplate: 'astral-sh/ruff',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'ruff',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.ruff\\.toml$/',
+      ],
+      fileFormat: 'toml',
+      matchStrings: [
+        '{ "currentValue": $match(`required-version`, /^==(.+)$/).groups[0] }',
+      ],
+      depNameTemplate: 'astral-sh/ruff',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'ruff',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$substringBefore(uses, "@") = "rvben/rumdl"].{ "currentValue": with.version }',
+      ],
+      depNameTemplate: 'rvben/rumdl',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'rumdl',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.SHELLCHECK_PY_VERSION)].{ "currentValue": env.SHELLCHECK_PY_VERSION }',
+      ],
+      depNameTemplate: 'shellcheck-py/shellcheck-py',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'shellcheck-py',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.SHFMT_VERSION)].{ "currentValue": env.SHFMT_VERSION }',
+      ],
+      depNameTemplate: 'mvdan/sh',
+      datasourceTemplate: 'go',
+      packageNameTemplate: 'mvdan.cc/sh/v3',
+      extractVersionTemplate: '^v(?<version>.+)$',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$substringBefore(uses, "@") = "tombi-toml/setup-tombi"].{ "currentValue": with.version }',
+      ],
+      depNameTemplate: 'tombi-toml/tombi',
+      datasourceTemplate: 'github-releases',
+    },
+    {
+      customType: 'jsonata',
+      managerFilePatterns: [
+        '/^\\.github/workflows/.*\\.ya?ml$/',
+      ],
+      fileFormat: 'yaml',
+      matchStrings: [
+        'jobs.*.steps[$exists(env.YAMLLINT_VERSION)].{ "currentValue": env.YAMLLINT_VERSION }',
+      ],
+      depNameTemplate: 'adrienverge/yamllint',
+      datasourceTemplate: 'pypi',
+      packageNameTemplate: 'yamllint',
+    },
+  ],
+  lockFileMaintenance: {
+    description: 'Skip the release-age gate, as nix flake update looks up no releases, so its updates carry no release timestamp and would otherwise keep the stability check pending forever; and refresh flake.lock at any time rather than weekly, so that it follows an update of the shared environment as soon as that is merged',
+    minimumReleaseAge: '0 days',
+    schedule: [
+      'at any time',
+    ],
+  },
+  packageRules: [
+    {
+      description: 'Follow full semver release tags of GitHub Actions references, as a moving major tag such as v7 can be picked ahead of its release while minimumReleaseAge holds the release back, leaving a pin comment like # v7',
+      matchManagers: [
+        'github-actions',
+      ],
+      matchDepTypes: [
+        'action',
+      ],
+      allowedVersions: '/^v?\\d+\\.\\d+\\.\\d+$/',
+    },
+    {
+      matchFileNames: [
+        '.agents/**',
+        '.github/workflows/**',
+        '.pre-commit-config.yaml',
+        '.ruff.toml',
+      ],
+      matchDepNames: [
+        '!ut-issl/issl-environment',
+      ],
+      semanticCommitScope: 'deps-dev',
+      labels: [
+        'automated',
+        'dev-dependencies',
+      ],
+    },
+    {
+      matchManagers: [
+        'pre-commit',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      automerge: true,
+    },
+    {
+      matchFileNames: [
+        '.github/workflows/**',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      automerge: true,
+    },
+    {
+      matchDepNames: [
+        'commitizen-tools/commitizen',
+      ],
+      groupName: 'commitizen',
+    },
+    {
+      description: 'Take only full vX.Y.Z releases of the shared environment without the release-age gate',
+      matchDepNames: [
+        'ut-issl/issl-environment',
+      ],
+      allowedVersions: '/^v\\d+\\.\\d+\\.\\d+$/',
+      minimumReleaseAge: '0 days',
+      groupName: 'issl environment',
+    },
+    {
+      description: 'Compare lychee hook versions by their lychee-vX.Y.Z tags, as the default semver-coerced versioning takes them for unstable and never offers a version update',
+      matchManagers: [
+        'pre-commit',
+      ],
+      matchDepNames: [
+        'lycheeverse/lychee',
+      ],
+      versioning: 'regex:^lychee-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$',
+    },
+    {
+      matchDepNames: [
+        'lycheeverse/lychee',
+      ],
+      groupName: 'lychee',
+    },
+    {
+      description: 'Update the Renovate that validates this config only weekly, as it releases several times a day',
+      extends: [
+        'schedule:weekly',
+      ],
+      matchDepNames: [
+        'renovatebot/renovate',
+      ],
+    },
+    {
+      matchDepNames: [
+        'renovatebot/renovate',
+      ],
+      matchUpdateTypes: [
+        'minor',
+      ],
+      automerge: true,
+    },
+    {
+      matchDepNames: [
+        'astral-sh/ruff',
+        'astral-sh/ruff-pre-commit',
+      ],
+      groupName: 'ruff',
+    },
+    {
+      matchDepNames: [
+        'astral-sh/ruff',
+      ],
+      matchUpdateTypes: [
+        'patch',
+      ],
+      automerge: true,
+    },
+    {
+      matchDepNames: [
+        'rvben/rumdl',
+        'rvben/rumdl-pre-commit',
+      ],
+      groupName: 'rumdl',
+    },
+    {
+      description: 'Compare ShellCheck versions as PEP 440, as Renovate would otherwise take its four-part hook tags such as v0.11.0.1-1 for prereleases and never offer them',
+      matchDepNames: [
+        'shellcheck-py/shellcheck-py',
+      ],
+      versioning: 'pep440',
+      groupName: 'shellcheck',
+    },
+    {
+      description: 'Compare shfmt hook versions as PEP 440, as Renovate would otherwise take its -N tags such as v3.14.1-1 for prereleases and never offer them',
+      matchDepNames: [
+        'scop/pre-commit-shfmt',
+      ],
+      versioning: 'pep440',
+    },
+    {
+      matchDepNames: [
+        'mvdan/sh',
+        'scop/pre-commit-shfmt',
+      ],
+      groupName: 'shfmt',
+    },
+    {
+      matchDepNames: [
+        'tombi-toml/setup-tombi',
+        'tombi-toml/tombi',
+        'tombi-toml/tombi-pre-commit',
+      ],
+      groupName: 'tombi',
+    },
+    {
+      matchDepNames: [
+        'crate-ci/typos',
+      ],
+      groupName: 'typos',
+    },
+    {
+      matchDepNames: [
+        'adrienverge/yamllint',
+      ],
+      groupName: 'yamllint',
+    },
+    {
+      description: 'Look up the zizmor image on GitHub Releases, as GHCR gives no release timestamps for minimumReleaseAge; hold it one day longer than zizmor-action, as the pinned action rejects zizmor versions released after it and an action release usually follows each zizmor release within a day; and skip the digest pinning from config:best-practices, which would put a commit SHA into the version input',
+      matchDepNames: [
+        'ghcr.io/zizmorcore/zizmor',
+      ],
+      overrideDatasource: 'github-releases',
+      overridePackageName: 'zizmorcore/zizmor',
+      minimumReleaseAge: '4 days',
+      pinDigests: false,
+    },
+  ],
+}

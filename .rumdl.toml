@@ -1,0 +1,58 @@
+[global]
+extend-enable = ["MD060", "MD070", "MD080", "MD083", "MD084", "MD087", "MD091", "MD095"]
+
+[MD013]
+code-blocks = false
+line-length = 120
+
+[MD044]
+names = [
+  "Bash",
+  "Cargo",
+  "Claude",
+  "Claude Code",
+  "Codex",
+  "Commitizen",
+  "Conventional Commits",
+  "CTAN",
+  "DCO",
+  "Docker",
+  "English",
+  "Git",
+  "GitHub",
+  "GitHub Actions",
+  "Home Manager",
+  "ISSL",
+  "Japanese",
+  "LaTeX",
+  "Linux",
+  "LuaLaTeX",
+  "Nerd Font",
+  "Nix",
+  "NixOS",
+  "Nixpkgs",
+  "OpenGL",
+  "OpenSSH",
+  "PDF Arranger",
+  "Powerline",
+  "Python",
+  "Qt",
+  "Renovate",
+  "Rust",
+  "SemVer",
+  "SPDX",
+  "Starship",
+  "SyncTeX",
+  "TeX Live",
+  "Typst",
+  "Ubuntu",
+  "UbuntuSansMono",
+  "WSL",
+  "wxWidgets",
+  "X11",
+  "Zsh",
+]
+whole-words = true
+
+[MD060]
+style = "aligned"

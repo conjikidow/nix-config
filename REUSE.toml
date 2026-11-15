@@ -1,0 +1,48 @@
+# REUSE configuration — https://reuse.software
+#
+# The substantive scaffolding (flake.nix, the Nix files under home-modules and
+# README.md) carries inline SPDX headers. This file declares licensing for the
+# remaining files.
+#
+# Generated files carry no copyright notice and are dedicated to the public
+# domain to the extent possible under CC0-1.0.
+
+version = 1
+
+[[annotations]]
+path = ["recipes/**"]
+SPDX-FileCopyrightText = [
+  "2026 Intelligent Space Systems Laboratory, The University of Tokyo",
+  "2026 Riki Nakamura",
+]
+SPDX-License-Identifier = "MIT-0"
+
+[[annotations]]
+path = [
+  ".agents/**",
+  ".claude/**",
+  ".cz.toml",
+  ".gitattributes",
+  ".github/**",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+  ".ruff.toml",
+  ".rumdl.toml",
+  ".shellcheckrc",
+  ".typos.toml",
+  ".yamllint.yaml",
+  "home-modules/.shellcheckrc",
+  "lychee.toml",
+  "recipes/*/README.md",
+  "recipes/README.md",
+]
+SPDX-FileCopyrightText = [
+  "2026 Intelligent Space Systems Laboratory, The University of Tokyo",
+  "2026 Riki Nakamura",
+]
+SPDX-License-Identifier = "MIT OR Apache-2.0"
+
+[[annotations]]
+path = [".template-base", "flake.lock"]
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"

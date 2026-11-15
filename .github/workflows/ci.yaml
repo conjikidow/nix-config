@@ -1,0 +1,867 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  determine-changes:
+    name: Determine changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      github-actions: ${{ steps.changed-files.outputs.github_actions_any_modified }}
+      github-actions-ci: ${{ steps.changed-files.outputs.github_actions_ci_any_modified }}
+      pre-commit-config: ${{ steps.changed-files.outputs.pre_commit_config_any_modified }}
+      renovate-config: ${{ steps.changed-files.outputs.renovate_config_any_modified }}
+      json5: ${{ steps.changed-files.outputs.json5_any_modified }}
+      toml: ${{ steps.changed-files.outputs.toml_any_modified }}
+      yaml: ${{ steps.changed-files.outputs.yaml_any_modified }}
+      markdown: ${{ steps.changed-files.outputs.markdown_any_modified }}
+      nix: ${{ steps.changed-files.outputs.nix_any_modified }}
+      python: ${{ steps.changed-files.outputs.python_any_modified }}
+      shell: ${{ steps.changed-files.outputs.shell_any_modified }}
+      zsh: ${{ steps.changed-files.outputs.zsh_any_modified }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          output_renamed_files_as_deleted_and_added: true
+          files_yaml: |
+            github_actions:
+              - '.github/workflows/**'
+              - '.github/problem-matchers/actionlint.json'
+            github_actions_ci:
+              - '.github/workflows/ci.yaml'
+            pre_commit_config:
+              - '.pre-commit-config.yaml'
+            renovate_config:
+              - '.github/renovate.json5'
+            json5:
+              - '**/*.json5'
+              - '.github/problem-matchers/json5.json'
+            toml:
+              - '**/*.toml'
+            yaml:
+              - '**/*.yaml'
+              - '**/*.yml'
+              - '.yamllint.yaml'
+            markdown:
+              - '**/*.md'
+              - '.rumdl.toml'
+              - 'lychee.toml'
+            nix:
+              - '**/*.nix'
+              - 'flake.lock'
+              - '.github/problem-matchers/statix.json'
+            python:
+              - '**/*.py'
+              - '.python-version'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.ruff.toml'
+            shell:
+              - '**/*.sh'
+              - '**/*.bash'
+              - '.shellcheckrc'
+              - 'home-modules/.shellcheckrc'
+              - '.github/problem-matchers/shellcheck.json'
+            zsh:
+              - '**/*.zsh'
+              - '.github/problem-matchers/zsh.json'
+
+  lint-github-actions:
+    name: Lint GitHub Actions
+    needs: determine-changes
+    if: needs.determine-changes.outputs.github-actions == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: false
+
+      - name: Lint GitHub Actions
+        env:
+          ACTIONLINT_VERSION: '1.7.12'
+          SHELLCHECK_PY_VERSION: '0.11.0.1'
+          SHELLCHECK_OPTS: --enable=require-double-brackets
+        run: |
+          go install "github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}"
+          uv tool install "shellcheck-py==${SHELLCHECK_PY_VERSION}"
+          echo '::add-matcher::.github/problem-matchers/actionlint.json'
+          "$(go env GOPATH)/bin/actionlint" -color -shellcheck="$(uv tool dir --bin)/shellcheck"
+
+  audit-zizmor:
+    name: Audit with zizmor
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.github-actions == 'true'
+      || needs.determine-changes.outputs.pre-commit-config == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit with zizmor
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          version: 'v1.32.0'
+          advanced-security: false
+          annotations: true
+
+      - name: Audit with zizmor (SARIF upload)
+        if: >-
+          always()
+          && github.event_name == 'push'
+          && github.event.repository.private == false
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          version: 'v1.32.0'
+          advanced-security: true
+
+  validate-renovate-config:
+    name: Validate Renovate config
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.renovate-config == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+
+      - name: Validate Renovate config
+        env:
+          LOG_FORMAT: json
+          RENOVATE_VERSION: '44.224.1'
+        run: |
+          npx --package="renovate@${RENOVATE_VERSION}" --yes renovate-config-validator \
+            --strict --no-global .github/renovate.json5 \
+            | jq --raw-output --arg file .github/renovate.json5 '
+                def escape: gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+                def level: if .level >= 50 then "ERROR" elif .level >= 40 then "WARN" else "INFO" end;
+                "\(level): \(.msg)",
+                (.err.message? // empty),
+                (.errors[]? | "::error file=\($file),title=\(.topic)::\(.topic): \(.message | escape)"),
+                (.warnings[]? | "::warning file=\($file),title=\(.topic)::\(.topic): \(.message | escape)"),
+                (select(.msg == "Config migration necessary")
+                  | "::warning file=\($file),title=\(.msg)::\(.msg): See the log for the diff.")
+              '
+
+  validate-json5:
+    name: Validate JSON5
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.json5 == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate JSON5
+        env:
+          JSON5_VERSION: '2.2.3'
+        run: |
+          echo '::add-matcher::.github/problem-matchers/json5.json'
+          exit_code=0
+          while IFS= read -r -d '' json5_file; do
+            npx --yes "json5@${JSON5_VERSION}" --validate "${json5_file}" 2>&1 \
+              | while IFS= read -r line; do
+                case "${line}" in
+                  'JSON5: '*) printf '%s: %s\n' "${json5_file}" "${line}" ;;
+                  *) printf '%s\n' "${line}" ;;
+                esac
+              done \
+              || exit_code=1
+          done < <(git ls-files -z '*.json5')
+          exit "${exit_code}"
+
+  format-toml:
+    name: Format TOML
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.toml == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Tombi
+        uses: tombi-toml/setup-tombi@8ddc6b91b6fa3ad0ce192a68b409930851e4886c # v1.11.2
+        with:
+          version: '1.11.2'
+
+      - name: Format TOML
+        run: tombi format --error-on-warnings
+
+      - name: Suggest TOML formatting
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-suggester@295fd4e5482381f33925c46ca5c2f66c69370267 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tool_name: tombi-format
+          cleanup: false
+
+      - name: Check TOML formatting
+        run: |
+          git diff --name-only | while IFS= read -r file; do
+            echo "::error file=${file},title=tombi-format::File is not formatted. Run tombi format."
+          done
+          git diff --exit-code
+
+  lint-toml:
+    name: Lint TOML
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.toml == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Tombi
+        uses: tombi-toml/setup-tombi@8ddc6b91b6fa3ad0ce192a68b409930851e4886c # v1.11.2
+        with:
+          version: '1.11.2'
+
+      - name: Lint TOML
+        run: tombi lint --error-on-warnings --diagnostics-format=github
+
+  lint-yaml:
+    name: Lint YAML
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.yaml == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: false
+
+      - name: Lint YAML
+        env:
+          YAMLLINT_VERSION: '1.38.0'
+        run: |
+          git ls-files -z '*.yaml' '*.yml' \
+            | xargs -0 -r uvx --from="yamllint==${YAMLLINT_VERSION}" yamllint --format=github --strict
+
+  check-links:
+    name: Check links
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.markdown == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Cache the link check results
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.sha }}
+          restore-keys: lychee-
+
+      - name: Check links
+        id: links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --no-progress --cache .
+          fail: false
+          format: json
+          lycheeVersion: 'v0.24.2'
+          output: lychee/out.json
+
+      - name: Annotate broken links
+        env:
+          LYCHEE_EXIT_CODE: ${{ steps.links.outputs.exit_code }}
+        run: |
+          if [[ ${LYCHEE_EXIT_CODE} != '0' && ${LYCHEE_EXIT_CODE} != '2' ]]; then
+            echo "::error title=lychee::lychee exited with code ${LYCHEE_EXIT_CODE}. See the Check links step."
+            exit "${LYCHEE_EXIT_CODE}"
+          fi
+          if [[ ! -s lychee/out.json ]]; then
+            echo '::error title=lychee::lychee wrote no report. See the Check links step.'
+            exit 1
+          fi
+          if ! jq --exit-status '.total > 0' lychee/out.json > /dev/null; then
+            echo '::error title=lychee::No links were found. This usually indicates a configuration error.'
+            exit 1
+          fi
+          if [[ ${GITHUB_EVENT_NAME} == 'pull_request' ]]; then
+            git -c core.quotePath=false diff --unified=0 --no-color --no-ext-diff --dst-prefix=b/ HEAD^1 HEAD \
+              | awk '
+                  /^diff --git / { file = ""; header = 1; next }
+                  header && /^\+\+\+ b\// { file = substr($0, 7); sub(/\t$/, "", file); next }
+                  /^@@ / { header = 0 }
+                  /^@@ / && file != "" {
+                    split(substr($3, 2), range, ",")
+                    count = (range[2] == "" ? 1 : range[2] + 0)
+                    for (i = 0; i < count; i++) print file ":" (range[1] + i)
+                  }
+                ' > lychee/changed-lines.txt
+          else
+            : > lychee/changed-lines.txt
+          fi
+          jq --raw-output --rawfile changed lychee/changed-lines.txt --arg prefix "file://${GITHUB_WORKSPACE}/" '
+              def escape: gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+              def escape_property: escape | gsub(":"; "%3A") | gsub(","; "%2C");
+              ($changed | split("\n") | map(select(length > 0) | {key: ., value: true}) | from_entries) as $lines
+              | (.error_map, .timeout_map)
+              | to_entries[]
+              | (.key | ltrimstr("./")) as $file
+              | .value[]
+              | (if $lines["\($file):\(.span.line)"] or (.url | test("^(file://|error:)"))
+                 then "error" else "warning" end) as $level
+              | "::\($level) file=\($file | escape_property),line=\(.span.line),col=\(.span.column),"
+                + "title=lychee::\("\(.url | ltrimstr($prefix)): \(.status.text)" | escape)"
+            ' lychee/out.json > lychee/annotations.txt
+          cat lychee/annotations.txt
+          if grep --quiet '^::error ' lychee/annotations.txt; then
+            exit 1
+          fi
+
+  lint-markdown:
+    name: Lint Markdown
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.markdown == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint Markdown
+        uses: rvben/rumdl@dac508e6b2f52c1d869811d138ffc1ff2b9f6e71 # v0.3.3
+        with:
+          version: '0.3.3'
+          report-type: annotations
+
+  format-nix:
+    name: Format Nix
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.nix == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format Nix
+        run: git ls-files -z '*.nix' | xargs -0 -r nix fmt --
+
+      - name: Suggest Nix formatting
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-suggester@295fd4e5482381f33925c46ca5c2f66c69370267 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tool_name: nixfmt
+          cleanup: false
+
+      - name: Check Nix formatting
+        run: |
+          git diff --name-only | while IFS= read -r file; do
+            echo "::error file=${file},title=nixfmt::File is not formatted. Run nix fmt."
+          done
+          git diff --exit-code
+
+  lint-nix:
+    name: Lint Nix
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.nix == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint Nix (deadnix)
+        run: |
+          git ls-files -z '*.nix' \
+            | xargs -0 -r nix run --inputs-from . nixpkgs#deadnix -- --fail --output-format=json \
+            | jq --raw-output '
+                def escape: gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+                .file as $file
+                | .results[]
+                | if .line then
+                    "::warning file=\($file),line=\(.line),col=\(.column),endColumn=\(.endColumn),title=deadnix::\(.message | escape)"
+                  else
+                    "Error parsing file \($file): \(.message)"
+                  end
+              '
+
+      - name: Lint Nix (statix)
+        run: |
+          echo '::add-matcher::.github/problem-matchers/statix.json'
+          git ls-files -z '*.nix' | xargs -0 -r -n 1 nix run --inputs-from . nixpkgs#statix -- check --format=errfmt
+
+  format-python:
+    name: Format Python
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.python == 'true'
+      || needs.determine-changes.outputs.markdown == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: false
+
+      - name: Format Python
+        env:
+          RUFF_VERSION: '0.17.4'
+        run: uvx --from="ruff==${RUFF_VERSION}" ruff format .
+
+      - name: Suggest Python formatting
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-suggester@295fd4e5482381f33925c46ca5c2f66c69370267 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tool_name: ruff-format
+          cleanup: false
+
+      - name: Check Python formatting
+        run: |
+          git diff --name-only | while IFS= read -r file; do
+            echo "::error file=${file},title=ruff-format::File is not formatted. Run ruff format."
+          done
+          git diff --exit-code
+
+  lint-python:
+    name: Lint Python
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.python == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: false
+
+      - name: Lint Python
+        env:
+          RUFF_VERSION: '0.17.4'
+        run: uvx --from="ruff==${RUFF_VERSION}" ruff check --output-format=github .
+
+  format-shell-scripts:
+    name: Format shell scripts
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.shell == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install shfmt
+        env:
+          SHFMT_VERSION: '3.14.1'
+        run: go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}"
+
+      - name: Format shell scripts
+        run: |
+          git ls-files -z '*.sh' '*.bash' \
+            | xargs -0 -r "$(go env GOPATH)/bin/shfmt" --write --simplify --indent=2 --binary-next-line --case-indent --space-redirects
+
+      - name: Suggest shell script formatting
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-suggester@295fd4e5482381f33925c46ca5c2f66c69370267 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tool_name: shfmt
+          cleanup: false
+
+      - name: Check shell script formatting
+        run: |
+          git diff --name-only | while IFS= read -r file; do
+            echo "::error file=${file},title=shfmt::File is not formatted. Run shfmt."
+          done
+          git diff --exit-code
+
+  lint-shell-scripts:
+    name: Lint shell scripts
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.shell == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.7'
+          enable-cache: false
+
+      - name: Lint shell scripts
+        env:
+          SHELLCHECK_PY_VERSION: '0.11.0.1'
+        run: |
+          echo '::add-matcher::.github/problem-matchers/shellcheck.json'
+          git ls-files -z '*.sh' '*.bash' \
+            | xargs -0 -r uvx --from="shellcheck-py==${SHELLCHECK_PY_VERSION}" shellcheck --format=gcc
+
+  format-zsh:
+    name: Format Zsh
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.zsh == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install shfmt
+        env:
+          SHFMT_VERSION: '3.14.1'
+        run: go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}"
+
+      - name: Format Zsh
+        run: |
+          git ls-files -z '*.zsh' \
+            | xargs -0 -r "$(go env GOPATH)/bin/shfmt" \
+              --write --language-dialect=zsh --simplify --indent=2 --binary-next-line --case-indent --space-redirects
+
+      - name: Suggest Zsh formatting
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-suggester@295fd4e5482381f33925c46ca5c2f66c69370267 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tool_name: shfmt-zsh
+          cleanup: false
+
+      - name: Check Zsh formatting
+        run: |
+          git diff --name-only | while IFS= read -r file; do
+            echo "::error file=${file},title=shfmt-zsh::File is not formatted. Run shfmt."
+          done
+          git diff --exit-code
+
+  validate-zsh:
+    name: Validate Zsh
+    needs: determine-changes
+    if: >-
+      needs.determine-changes.outputs.zsh == 'true'
+      || needs.determine-changes.outputs.github-actions-ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get --yes install zsh
+
+      - name: Validate Zsh
+        run: |
+          echo '::add-matcher::.github/problem-matchers/zsh.json'
+          git ls-files -z '*.zsh' | xargs -0 -r -n 1 zsh --no-exec
+
+  check-spelling:
+    name: Check spelling
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check spelling
+        uses: crate-ci/typos@276087d9a4f06398b3e04825487805e2d7375888 # v1.52.2
+
+  lint-commit-messages:
+    name: Lint commit messages
+    if: github.repository == 'ut-issl/personal-nix-config-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install Commitizen
+        uses: commitizen-tools/setup-cz@96c75e6ae9632047f2c9b4025b9dd1624b40de8f # v0.9.1
+        with:
+          version: '4.19.2'
+          python-version: '3.x'
+
+      - name: Lint commit messages (push)
+        if: github.event_name == 'push'
+        env:
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if ! git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2> /dev/null; then
+            echo '::notice title=cz check::Base commit unavailable (new branch or force push); skipping lint.'
+            exit 0
+          fi
+          cz check --rev-range="${PUSH_BEFORE_SHA}..${GITHUB_SHA}"
+
+      - name: Lint commit messages (pull request)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: cz check --rev-range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+
+  run-prek-hooks:
+    name: Run prek hooks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run prek hooks
+        uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
+        with:
+          prek-version: 'v0.5.10'
+          extra-args: --skip=no-commit-to-branch --all-files
+
+  check-ci-results:
+    name: Check CI results
+    needs:
+      - determine-changes
+      - lint-github-actions
+      - audit-zizmor
+      - validate-renovate-config
+      - validate-json5
+      - format-toml
+      - lint-toml
+      - lint-yaml
+      - check-links
+      - lint-markdown
+      - format-nix
+      - lint-nix
+      - format-python
+      - lint-python
+      - format-shell-scripts
+      - lint-shell-scripts
+      - format-zsh
+      - validate-zsh
+      - check-spelling
+      - lint-commit-messages
+      - run-prek-hooks
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check the job results
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          failed_jobs="$(jq --raw-output '
+              to_entries[]
+              | select(.value.result != "success" and .value.result != "skipped")
+              | "\(.key) finished with \(.value.result)."
+            ' <<< "${JOB_RESULTS}")"
+          if [[ -n ${failed_jobs} ]]; then
+            while IFS= read -r failed_job; do
+              echo "::error title=check-ci-results::${failed_job}"
+            done <<< "${failed_jobs}"
+            exit 1
+          fi

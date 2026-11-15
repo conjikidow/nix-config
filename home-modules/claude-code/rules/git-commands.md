@@ -73,6 +73,8 @@ cd /path/to/repo && gh pr view 344 --json state,mergedAt,headRefName
 - If hooks auto-modified files, review the changes.
   Stage and retry only when they are of the same mechanical kind and limited to the files being committed;
   otherwise report what the hooks changed and wait for instructions.
+  If a changed file also held unstaged changes before the commit, staging it would take those in as well:
+  report it and wait instead.
 - If the correct fix is to change the hook/lint rule itself (e.g. a false positive),
   propose the change to the user and get approval first; NEVER modify hook or lint rules unilaterally.
 - When committing, keep an approved hook/lint rule change in its own commit, separate from code changes.

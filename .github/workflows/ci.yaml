@@ -760,7 +760,6 @@ jobs:
 
   lint-commit-messages:
     name: Lint commit messages
-    if: github.repository == 'ut-issl/personal-nix-config-template'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

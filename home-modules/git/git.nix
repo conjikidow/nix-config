@@ -20,8 +20,8 @@ in
 
     settings = {
       # Personal identity:
-      # user.name = "Your Name";
-      # user.email = "you@example.com";
+      user.name = "Riki Nakamura";
+      user.email = "riki.nakamura.edu@gmail.com";
 
       # Add your personal Git configuration below.
       # The commented lines below are examples. Uncomment and adjust them if you want these preferences.

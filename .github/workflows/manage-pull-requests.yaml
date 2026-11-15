@@ -62,7 +62,6 @@ jobs:
 
   lint-pull-request-title:
     name: Lint pull request title
-    if: github.repository == 'ut-issl/personal-nix-config-template'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

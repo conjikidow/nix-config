@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 {
-  description = "Personal Home Manager configuration template for the ISSL environment";
+  description = "Personal Home Manager configuration for the ISSL environment";
 
   inputs = {
     issl.url = "github:ut-issl/issl-environment/v0.14.1";
@@ -99,7 +99,6 @@
         {
           home = mkCheck system { };
           home-desktop = mkCheck system { enableDesktop = true; };
-          home-bash-only = mkCheck system { extraModules = [ { issl.zsh.enable = false; } ]; };
           home-desktop-gpu = mkCheck system {
             enableDesktop = true;
             extraModules = [ { targets.genericLinux.gpu.enable = true; } ];

@@ -5,18 +5,18 @@ SPDX-FileCopyrightText: 2026 Riki Nakamura
 SPDX-License-Identifier: MIT OR Apache-2.0
 -->
 
-# personal-nix-config-template
+# nix-config
 
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-E95420.svg?style=flat&logo=ubuntu&logoColor=white)](https://ubuntu.com)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-26.04-E95420.svg?style=flat&logo=ubuntu&logoColor=white)](https://ubuntu.com)
 [![Built with Nix](https://img.shields.io/badge/Built_with_Nix-41439a.svg?style=flat&logo=nixos&logoColor=white)](https://nixos.org)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg?style=flat)](#license)
 [![prek](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json)](https://github.com/j178/prek)
-[![CI](https://github.com/ut-issl/personal-nix-config-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/ut-issl/personal-nix-config-template/actions/workflows/ci.yaml)
-[![Test](https://github.com/ut-issl/personal-nix-config-template/actions/workflows/test.yaml/badge.svg)](https://github.com/ut-issl/personal-nix-config-template/actions/workflows/test.yaml)
+[![CI](https://github.com/conjikidow/nix-config/actions/workflows/ci.yaml/badge.svg)](https://github.com/conjikidow/nix-config/actions/workflows/ci.yaml)
+[![Test](https://github.com/conjikidow/nix-config/actions/workflows/test.yaml/badge.svg)](https://github.com/conjikidow/nix-config/actions/workflows/test.yaml)
 
-Personal Home Manager configuration template for the ISSL environment.
+Personal Home Manager configuration for the ISSL environment.
 
-This template imports the shared configuration from [`ut-issl/issl-environment`](https://github.com/ut-issl/issl-environment)
+This repository imports the shared configuration from [`ut-issl/issl-environment`](https://github.com/ut-issl/issl-environment)
 and lets each user manage personal startup files and additional settings declaratively.
 
 The ISSL shared files are deployed under `~/.config/issl` by the imported shared module.
@@ -26,16 +26,7 @@ For how this path fits into the shared environment, and for what that shared mod
 [setup with a personal config repository](https://github.com/ut-issl/issl-environment/blob/v0.14.1/docs/11-setup-with-a-personal-config-repository.md).
 For the platforms the shared environment supports, see [supported platforms](https://github.com/ut-issl/issl-environment/blob/v0.14.1/docs/10-user-guide.md#supported-platforms).
 
-> [!WARNING]
-> This repository is an early-stage prototype and is under active development.
-> It may be made private or deleted without prior notice.
-> It is provided as-is, without user support or compatibility guarantees.
-> Use it at your own risk.
-
 ## Getting Started
-
-Create your own repository from this template using the **Use this template** button on GitHub,
-then follow the steps below in it.
 
 ### 1. Prepare the Host
 
@@ -56,20 +47,13 @@ Clone your repository using Git and OpenSSH provided through Nix:
 
 ```sh
 nix --extra-experimental-features "nix-command flakes" shell nixpkgs#git nixpkgs#openssh_gssapi \
-  --command git clone git@github.com:<your-account>/<your-repository>.git
-cd <your-repository>
+  --command git clone git@github.com:conjikidow/nix-config.git
+cd nix-config
 ```
 
 ### 3. Configure Your Git Identity
 
-Edit [`home-modules/git/git.nix`](home-modules/git/git.nix) and set your Git identity.
-
-Uncomment and update these lines:
-
-```nix
-user.name = "Your Name";
-user.email = "you@example.com";
-```
+Your Git identity is already set in [`home-modules/git/git.nix`](home-modules/git/git.nix), which is where to change it.
 
 For other Git settings and any further customization, see [Customize Your Configuration](#customize-your-configuration).
 
@@ -89,7 +73,7 @@ For other Git settings and any further customization, see [Customize Your Config
 Zsh is enabled by default, for the whole repository rather than per host.
 To make this repository Bash-only instead, follow [Choose Your Shell](#choose-your-shell) first.
 
-This template provides one configuration per kind of host:
+This repository provides one configuration per kind of host:
 
 - `.#user`: WSL, or a machine you reach only through a terminal
 - `.#user-desktop`: a machine you use through its graphical desktop
@@ -113,15 +97,6 @@ Use `.#user-desktop` in that command on a desktop host.
 This repository ships skills for coding agents that support [Agent Skills](https://agentskills.io) (e.g. Codex or Claude Code).
 Invoke a skill with `$<name>` in Codex or `/<name>` in Claude Code.
 
-### `repo-setup`
-
-Interactively walks you through the repository setup: it checks your Git identity, asks which shell you want
-and which Ubuntu releases and configurations the [environment tests](#environment-tests) cover,
-and sets up the [development tooling](#development-tooling) (pre-commit hooks and the opt-in features).
-
-You can run it on the host you just set up, where Codex is installed by the applied configuration,
-or on any other machine where an agent is already available (e.g. when preparing this repository from your current environment).
-
 ### `customize`
 
 Assists [customizing your configuration](#customize-your-configuration) interactively —
@@ -130,7 +105,7 @@ State what you want when invoking it (e.g. `$customize add lazygit`).
 
 ### `sync-template`
 
-Merges later improvements to this template into your repository.
+Merges later improvements to the template into this repository.
 
 A repository created from a GitHub template shares no history with it, so the two drift apart from the moment it is created.
 This skill works out which template commit you last took — on the first run, the one your repository was created from —
@@ -343,12 +318,12 @@ Build `.#homeConfigurations.user-desktop.activationPackage` instead to inspect a
 
 ## Development Tooling
 
-This template ships a few quality and maintenance tools.
-Pre-commit hooks are part of the everyday workflow, while Renovate and Conventional Commits enforcement are opt-in.
+This repository ships a few quality and maintenance tools.
+Pre-commit hooks are part of the everyday workflow, and Renovate and Conventional Commits enforcement are enabled.
 
 ### Pre-commit Hooks
 
-This template uses [prek](https://prek.j178.dev), a faster drop-in replacement for [pre-commit](https://pre-commit.com),
+This repository uses [prek](https://prek.j178.dev), a faster drop-in replacement for [pre-commit](https://pre-commit.com),
 with the hooks defined in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
 
 > [!NOTE]
@@ -370,22 +345,18 @@ The `run-prek-hooks` CI job runs the same hooks on every pull request.
 [Renovate](https://docs.renovatebot.com) is preconfigured in [`.github/renovate.json5`](.github/renovate.json5)
 to track the pinned ISSL environment version, Action SHAs,
 pinned tool versions inside [`ci.yaml`](.github/workflows/ci.yaml), and pre-commit hooks.
-It is silent by default: Renovate scans the repository but opens no pull requests or issues.
-To opt in, remove the `mode: 'silent'` line, and make sure the Renovate GitHub App is installed for the repository.
+It is enabled in this repository and takes effect once the Renovate GitHub App is installed for it.
 Some updates are configured to merge automatically,
 which waits for the checks to pass only when they are required (see [Required Status Checks](#required-status-checks)).
 The `validate-renovate-config` CI job checks the configuration whenever it changes.
 
 ### Conventional Commits
 
-Commit messages and pull request titles can be checked against [Conventional Commits](https://www.conventionalcommits.org) via [Commitizen](https://github.com/commitizen-tools/commitizen).
+Commit messages and pull request titles are checked against [Conventional Commits](https://www.conventionalcommits.org) via [Commitizen](https://github.com/commitizen-tools/commitizen).
 
-These checks are scoped to the template repository itself:
-an `if` guard on [`lint-commit-messages` in `ci.yaml`](.github/workflows/ci.yaml)
-and on [`lint-pull-request-title` in `manage-pull-requests.yaml`](.github/workflows/manage-pull-requests.yaml)
-limits them to `ut-issl/personal-nix-config-template`,
-and the `commitizen` hooks in [`.pre-commit-config.yaml`](.pre-commit-config.yaml) are commented out.
-To enforce Conventional Commits in your own repository, remove both `if` guards and uncomment the `commitizen` hooks.
+The checks run in [`lint-commit-messages` in `ci.yaml`](.github/workflows/ci.yaml),
+[`lint-pull-request-title` in `manage-pull-requests.yaml`](.github/workflows/manage-pull-requests.yaml),
+and the `commitizen` hooks in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
 Linting the PR title is especially useful with squash merging,
 since the PR title becomes the subject of the squashed commit by default.
 
@@ -404,9 +375,8 @@ cz commit
 The [`lint-reuse-compliance.yaml`](.github/workflows/lint-reuse-compliance.yaml) CI workflow checks that every file carries
 copyright and licensing information following the [REUSE](https://reuse.software) specification (see [License](#license)).
 
-This check is scoped to the template repository itself: an `if` guard on the `lint-reuse-compliance` job limits it to `ut-issl/personal-nix-config-template`,
-so it does nothing in repositories derived from this template and can be left in place.
-To enforce REUSE compliance in your own repository, remove the `if` guard from the `lint-reuse-compliance` job.
+The check runs in this repository, so every file you add must carry copyright and licensing information,
+either in an SPDX header or in an annotation in [`REUSE.toml`](REUSE.toml).
 
 ### Environment Tests
 
@@ -426,7 +396,8 @@ The CI and Test workflows each end with a job that fails if any other job in the
 Where your GitHub plan supports it for this repository,
 require these two checks in a branch ruleset for the default branch instead of listing each job.
 These two checks cover only the CI and Test workflows;
-checks from other workflows have to be required separately.
+checks from other workflows, such as `Lint pull request title` and `Lint REUSE compliance`,
+have to be required separately.
 
 When you add a job to [`ci.yaml`](.github/workflows/ci.yaml) or [`test.yaml`](.github/workflows/test.yaml),
 also add it to the `needs` of the `check-ci-results` or `check-test-results` job.
@@ -434,7 +405,7 @@ Otherwise, the new job does not block merging when it fails.
 
 ## License
 
-The scaffolding provided by this template is licensed under either [MIT](LICENSES/MIT.txt) or [Apache-2.0](LICENSES/Apache-2.0.txt)
+The scaffolding provided by the template is licensed under either [MIT](LICENSES/MIT.txt) or [Apache-2.0](LICENSES/Apache-2.0.txt)
 at your option, declared per file following the [REUSE](https://reuse.software) specification (see [REUSE.toml](REUSE.toml)).
 
 The Nix fragments under [`recipes/`](recipes/), and the files they deploy, are licensed under [MIT-0](LICENSES/MIT-0.txt) instead,

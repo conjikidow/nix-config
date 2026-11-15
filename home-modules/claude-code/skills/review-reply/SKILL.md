@@ -21,8 +21,10 @@ The user pastes a reviewer's comment and asks what it means or whether it is cor
 Typical request: "reviewへの返信を1行程度で簡潔に作成して".
 
 - Draft a reply of about one sentence in English — factual, polite, no filler.
-- If a fix was made, reference the fixing commit hash (e.g. "Fixed in `abc1234`."),
+- If a fix was committed, reference its commit hash (e.g. "Fixed in `abc1234`."),
   optionally with a half-sentence on what changed.
+  If the fix is not committed yet, do not commit it for the reply:
+  write the draft with a placeholder for the hash and say that it is pending.
 - If no fix is needed, state the reason concisely: intentional behavior, out of scope, tracked separately, etc.
 - Present the draft to the user; the user usually posts it themselves.
   Only post via `gh` when explicitly instructed, and reply in the review comment's thread, not as a new issue comment.

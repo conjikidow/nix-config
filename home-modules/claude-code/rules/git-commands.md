@@ -40,7 +40,11 @@ Rewrite it rather than trying to work around the hook.
 ## Operating on a GitHub repository outside the working directory
 
 The same principle applies to `gh`: when the working directory is not the target repository,
-pass the repo explicitly with `gh -R <owner/repo>` (equivalently `--repo`) instead of `cd <path> && gh <subcommand>`.
+pass the repo explicitly with `gh -R <owner/repo>` (equivalently `--repo`) instead of `cd <path> && gh <subcommand>`,
+for the subcommands that accept it, such as `gh pr`, `gh issue`, `gh run`, `gh release`, and `gh workflow`.
+
+- `gh repo` subcommands take the repository as an argument instead: `gh repo view <owner/repo>`.
+- `gh api` has no `-R`: write the owner and repo into the endpoint path, such as `gh api repos/<owner>/<repo>/pulls`.
 
 Unlike `git -C`, which takes a filesystem path, `gh -R` takes the `owner/repo` slug (or a GitHub URL).
 If you don't know the slug, derive it with `git -C <path> remote get-url origin` first.

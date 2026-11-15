@@ -47,8 +47,9 @@ No fix is written until a hypothesis has survived an experiment.
 ## 4. Bisect when the search space is large
 
 - Over history: `git bisect` between a known-good and known-bad commit,
-  in a disposable worktree (`git worktree add`) rather than the one the user works in,
-  and always end it with `git bisect reset`.
+  in a disposable worktree (`git worktree add --detach <path>`) rather than the one the user works in.
+  Always end it with `git bisect reset`, then remove the worktree (`git worktree remove <path>`);
+  if the removal is refused, report it and leave the worktree in place.
 - Over input: shrink the failing input by halves until it is minimal.
 - Over the pipeline: check intermediate state at the midpoint to learn which half owns the fault.
 

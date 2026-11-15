@@ -15,13 +15,15 @@ This means: bring the local repository (or repositories) back to a clean baselin
 2. Verify the merge actually happened: `gh pr view <num> --json state,mergedAt`,
    or confirm the branch tip is contained in the default branch after pulling.
 3. `git switch <default-branch>` then `git pull`.
-4. Remove any Git worktrees created for this work (`git worktree remove`), if applicable.
+4. For each merged branch, confirm it holds nothing beyond the PR:
+   its tip must equal the PR's last head commit (`gh pr view <num> --json headRefOid`).
+   If it differs, report the branch and leave both it and its worktree in place.
+5. Remove any Git worktrees created for this work (`git worktree remove`, without `--force`), if applicable.
    A branch still checked out in a worktree cannot be deleted, even with `-D`.
-5. Delete the merged local branches with `git branch -d`.
-   If `-d` refuses (squash-merged branches are not detected as merged), confirm the PR state is MERGED via `gh` first,
-   then use `-D`.
-6. `git fetch --prune`.
-7. Remove leftover temporary files created for the PR, such as `.pr-body.md`.
+6. Delete the merged local branches with `git branch -d`.
+   If `-d` refuses (squash-merged branches are not detected as merged), use `-D` for a branch that passed step 4.
+7. `git fetch --prune`.
+8. Remove leftover temporary files created for the PR, such as `.pr-body.md`.
 
 Use `git -C <path>` for repositories outside the current working directory.
 

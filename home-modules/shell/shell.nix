@@ -11,4 +11,6 @@ _:
   # Keep the line below commented out for Zsh; uncomment it for a Bash-only environment.
 
   # issl.zsh.enable = false;
+
+  programs.starship.enable = true;
 }

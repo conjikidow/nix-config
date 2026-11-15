@@ -43,6 +43,15 @@ SPDX-FileCopyrightText = [
 SPDX-License-Identifier = "MIT OR Apache-2.0"
 
 [[annotations]]
+path = [
+  "home-modules/claude-code/CLAUDE.md",
+  "home-modules/claude-code/rules/**",
+  "home-modules/claude-code/skills/**",
+]
+SPDX-FileCopyrightText = "2026 Riki Nakamura"
+SPDX-License-Identifier = "MIT OR Apache-2.0"
+
+[[annotations]]
 path = [".template-base", "flake.lock"]
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"

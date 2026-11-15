@@ -53,5 +53,6 @@ When editing, preserve existing comments unless they become false; update the on
 Diff your own change and ask:
 
 - Does every hunk serve the request? Remove the ones that do not.
-- Would a reviewer ask "why is this here?" about anything? Either it has a reason worth a comment, or it goes.
+- Would a reviewer ask "why is this here?" about anything? Either you can state its reason, or the hunk goes.
+  Give the reason in your report, and in the commit message body once you are asked to commit.
 - Did formatting-only churn slip in (re-wrapped lines, import reshuffles in untouched code)? Revert it.

@@ -4,7 +4,6 @@
     'config:best-practices',
     ':semanticCommitTypeAll(build)',
   ],
-  mode: 'silent',
   minimumReleaseAge: '3 days',
   labels: [
     'automated',

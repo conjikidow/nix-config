@@ -12,6 +12,6 @@
     # it needs a one-time privileged setup on each machine.
     # See "Install Desktop Applications" in `README.md`.
 
-    # targets.genericLinux.gpu.enable = true;
+    targets.genericLinux.gpu.enable = true;
   };
 }

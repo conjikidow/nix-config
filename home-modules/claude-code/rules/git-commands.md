@@ -67,10 +67,12 @@ cd /path/to/repo && gh pr view 344 --json state,mergedAt,headRefName
 
 - If a commit is rejected by hooks, never bypass with `--no-verify`.
   Fix a mechanical problem in the files being committed, such as formatting, a typo,
-  or a lint fix that does not change behavior, and retry the same commit.
+  or a lint fix that does not change behavior, stage only that fix, and retry the same commit.
   Report any other failure, such as a failing test, a logic error, or a fix needed in another file,
   and wait for instructions.
-- If hooks auto-modified files, review the changes, stage them, and retry the same commit.
+- If hooks auto-modified files, review the changes.
+  Stage and retry only when they are of the same mechanical kind and limited to the files being committed;
+  otherwise report what the hooks changed and wait for instructions.
 - If the correct fix is to change the hook/lint rule itself (e.g. a false positive),
   propose the change to the user and get approval first; NEVER modify hook or lint rules unilaterally.
 - When committing, keep an approved hook/lint rule change in its own commit, separate from code changes.

@@ -52,6 +52,9 @@ No fix is written until a hypothesis has survived an experiment.
 
 ## 5. Fix the root cause, then prove it
 
+- Write the fix only when the request asks for one.
+  When asked only to investigate or explain, or when a review comment or CI failure was pasted,
+  skip to section 6, report the confirmed cause, and wait (see the workflow-checkpoints rule).
 - Fix where the bad state is created, not where it explodes.
   Guards at the crash site that hide upstream faults are symptom patches.
 - Re-run the exact reproduction from step 1 and confirm it now passes; for intermittent failures,

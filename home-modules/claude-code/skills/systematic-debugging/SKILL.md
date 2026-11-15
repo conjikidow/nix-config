@@ -20,6 +20,10 @@ No fix is written until a hypothesis has survived an experiment.
 - If it is intermittent, run it enough times to know the failure rate;
   that baseline is how you will later prove the fix.
 - Record the exact reproduction command; you will run it after every experiment.
+- Reproduce only where it is safe: in a local or disposable environment, with inputs that have no external
+  or irreversible effects.
+  If reproducing would send messages, change a shared or production system, or delete data,
+  do not run it without the user's explicit go-ahead; diagnose from the logs, the code, and the recorded evidence instead.
 
 ## 2. Read the actual evidence
 

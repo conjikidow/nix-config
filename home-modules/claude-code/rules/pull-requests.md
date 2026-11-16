@@ -2,7 +2,7 @@
 
 ## Title
 
-Follow [Conventional Commits](commit-messages.md) for pull request titles.
+Follow the `commit-messages` conventions (Conventional Commits) for pull request titles.
 The title becomes the squash-merge commit subject, so the same `<type>(<scope>)[!]: <description>` rules apply.
 
 ## Body
@@ -13,7 +13,7 @@ The title becomes the squash-merge commit subject, so the same `<type>(<scope>)[
   - Only use `## Summary` / `## Background` style sections when the PR is large enough to need them.
 - Do not write about routine pre-commit hooks, linters, formatters, or CI checks. These are expected and add noise.
 - Do not list every file changed; the diff already shows that.
-- Do not include attribution lines like "Generated with Claude Code" or co-author trailers.
+- Do not include attribution lines, such as "Generated with Claude Code" or "Generated with Codex", or co-author trailers.
 - Keep the PR self-contained within its repository:
   do not reference other repositories or their PRs unless explicitly instructed.
 - When the PR closes an issue, append `Closes #<num>` on its own line at the end of the body.

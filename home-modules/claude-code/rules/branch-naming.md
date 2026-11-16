@@ -1,6 +1,6 @@
 # Branch Naming
 
-Use kebab-case with a type prefix matching the [commit convention](commit-messages.md):
+Use kebab-case with a type prefix matching the `commit-messages` conventions:
 
 - `feat/<short-description>`
 - `fix/<short-description>`

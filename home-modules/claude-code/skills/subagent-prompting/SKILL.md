@@ -1,6 +1,6 @@
 ---
 name: subagent-prompting
-description: How to write the prompt when delegating work to a subagent via the Agent tool — a done-state task definition, embedded context, explicit scope boundaries, an output contract, and fallback rules, then reviewing what comes back. Use whenever spawning or messaging a subagent.
+description: How to write the prompt when delegating work to a subagent — a done-state task definition, embedded context, explicit scope boundaries, an output contract, and fallback rules, then reviewing what comes back. Use whenever spawning or messaging a subagent.
 ---
 
 # Subagent Prompting

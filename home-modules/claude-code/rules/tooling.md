@@ -10,7 +10,7 @@ Use these from the start instead of discovering them via denied commands.
   run the interpreter via `uv run python` (and scripts via `uv run <script>`).
 - For a CLI tool available on PyPI, first check whether it is installed locally (e.g. `command -v <tool>`);
   use it directly if present, and only fall back to `uvx <tool>` if it is not. Do not install it.
-- Never use `pip`, `pip3`, `python -m pip`, or `uv pip`; they are all denied by permissions.
+- Never use `pip`, `pip3`, `python -m pip`, or `uv pip`.
 
 ## Rust
 

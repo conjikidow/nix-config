@@ -6,18 +6,12 @@ When running Git against a repository that is not the current working directory,
 use `git -C <path> <subcommand>` instead of `cd <path> && git <subcommand>`.
 
 This holds **even when the target repo is a subdirectory of the working directory**:
-a subdirectory is still a different directory, so `cd <subdir> && git …` triggers the prompt.
+a subdirectory is still a different directory.
 If the working directory is `/repos` and the repo is `/repos/app`, use `git -C /repos/app …`,
 not `cd /repos/app && git …`.
 
 When chaining several Git commands, **repeat `git -C <path>` for each one** — do not `cd` once and then run bare `git`.
 The extra verbosity is intended.
-
-Reason: Claude Code's read-only auto-approval covers `cd` and read-only `git` forms individually,
-but always prompts when `cd` (into a different directory) and `git` are combined in one compound command,
-because Git may execute that directory's hooks
-(see [permissions docs](https://code.claude.com/docs/en/permissions#read-only-commands)).
-Using `git -C` avoids the unnecessary confirmation.
 
 Example:
 
@@ -34,9 +28,6 @@ cd /path/to/repo && git status && git log --oneline -20 && git branch -a
 This applies whenever the target repo differs from the working directory —
 including when the working directory is not a Git repo at all.
 
-A PreToolUse hook enforces this: a `cd <path> && … git …` compound is denied with a reminder to use `git -C`.
-Rewrite it rather than trying to work around the hook.
-
 ## Operating on a GitHub repository outside the working directory
 
 The same principle applies to `gh`: when the working directory is not the target repository,
@@ -48,10 +39,6 @@ for the subcommands that accept it, such as `gh pr`, `gh issue`, `gh run`, `gh r
 
 Unlike `git -C`, which takes a filesystem path, `gh -R` takes the `owner/repo` slug (or a GitHub URL).
 If you don't know the slug, derive it with `git -C <path> remote get-url origin` first.
-
-Reason: `cd` into a directory outside the working directory is not auto-approved (read-only `cd` only covers the working
-directory and additional directories), so `cd <path> && gh …` triggers a prompt.
-`gh -R <owner/repo>` keeps the call to a single `gh` command that is auto-approved.
 
 Example:
 

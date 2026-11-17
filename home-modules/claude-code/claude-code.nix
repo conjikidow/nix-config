@@ -3,11 +3,20 @@
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
+{ lib, ... }:
+
 {
+  imports = [
+    ./managed-settings.nix
+    ./subcommand-guard.nix
+  ];
+
   programs.claude-code = {
     enable = true;
     context = ./CLAUDE.md;
     rulesDir = ./rules;
     skills = ./skills;
   };
+
+  local.claudeCode.managedSettings = lib.importJSON ./managed-settings.json;
 }

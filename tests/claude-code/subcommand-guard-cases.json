@@ -17,7 +17,17 @@
     "git -C r log a#b; git -C r stash",
     "(( x << 2 )); git -C r stash",
     "git -C /tmp diff; =git -C /tmp reset --hard",
-    "=gh -R o/r secret list"
+    "=gh -R o/r secret list",
+    "g''it -C /repo reset --hard HEAD",
+    "g\\it -C /repo stash",
+    "g''it stash",
+    "\"git\" stash list",
+    "$'git' stash",
+    "$'gh' secret list",
+    "$'\\x67it' reset --hard HEAD",
+    "g\\\nit -C r stash",
+    "git 'stash'",
+    "git -C r 'stash'"
   ],
   "ask": [
     "git -C /repo config diff.external /tmp/x.sh",
@@ -83,7 +93,19 @@
     "git -C . --namespace <<<x diff config core.hooksPath /tmp/e",
     "git -C . --namespace (x_none)(N) diff config core.hooksPath /tmp/e",
     "echo $(case x in a)git -C r config core.pager diff;; esac)",
-    "echo `echo \\`git -C r config core.pager diff\\``"
+    "echo `echo \\`git -C r config core.pager diff\\``",
+    "cat <<EOF\n\t$(git -C r config core.pager diff)\nEOF",
+    "cat <<EOF\nx\n  $(git -C r config core.pager diff)\nEOF",
+    "cat <<-EOF\n\t$(git -C r config core.pager diff)\n\tEOF",
+    "git -C r commit -F - <<EOF\nfix: use `git -C r config core.pager diff`\nEOF",
+    "echo ${x:-`git -C r config core.pager diff`}",
+    "echo \"${x:-`git -C r config core.pager diff`}\"",
+    "timeout 30 \"git\" -C r config core.pager diff",
+    "timeout 30 \\git -C r config core.pager diff",
+    "$G -C r config core.pager diff",
+    "$(printf git) stash",
+    "cat <<EOF\n\t$((git -C r config core.pager diff); echo)\nEOF",
+    "cat <<EOF\n$((echo a); echo b)\n\t$(git -C r config core.pager diff)\nEOF"
   ],
   "none": [
     "git status",
@@ -123,6 +145,18 @@
     "git -C r log --format='%h (%s)'",
     "git -C r status >/dev/null 2>&1",
     "git -C r diff > /tmp/o",
-    "gh -R o/r issue list --search \"is:open (bug)\""
+    "gh -R o/r issue list --search \"is:open (bug)\"",
+    "git -C r commit -F - <<'EOF'\nfix: use `x` and $(y)\nEOF",
+    "git",
+    "gh",
+    "\"$EDITOR\" notes.txt",
+    "ls **/*.nix(.N)",
+    "print -l ${(k)assoc}",
+    "echo ${(j:,:)arr}",
+    "for f (a b) echo $f",
+    "grep '\\`' f",
+    "git -C r commit -m \"fix: use \\`x\\`\"",
+    "git -C \"$r\" status",
+    "git -C \"$PWD\" status"
   ]
 }

@@ -81,7 +81,8 @@ in
         default = [ ];
         description = ''
           Permission rules merged into `permissions.${kind}` of the Claude Code user settings on every switch.
-          A rule already present in the settings is left to the user.
+          A rule already present in the settings is left to the user and keeps its place before the managed rules,
+          so a `!` rule that the settings already hold does not carve out of a managed rule added after it.
           To remove every managed rule and hook, empty these options and switch once before removing the module.
         '';
       }

@@ -32,6 +32,8 @@ def static_value(node: Node) -> str:
         return re.sub(r"\\(.)", r"\1", text)
     if node.type == "raw_string":
         return text[1:-1]
+    if node.type == "ansi_c_string" and text.isascii():
+        return text[2:-1].encode().decode("unicode_escape")
     if node.type == "string" and all(child.type in STATIC_STRING_PARTS for child in node.children):
         return re.sub(r'\\([$`"\\])', r"\1", text[1:-1])
     if node.type == "concatenation":
@@ -55,13 +57,19 @@ def load_rules(path: str) -> dict:
     }
 
 
+def option_value(node: Node) -> None:
+    """Fail unless the option value is always exactly one word."""
+    if node.type not in ("string", "raw_string", "ansi_c_string"):
+        static_value(node)
+
+
 def subcommand_index(program: str, args: list) -> int:
     """Return the index of the first argument after the global options."""
     i = 0
     while i < len(args):
         value = static_value(args[i])
         if (program == "git" and value in GIT_OPTIONS_WITH_VALUE) or (program == "gh" and value in ("-R", "--repo")):
-            static_value(args[i + 1])
+            option_value(args[i + 1])
             i += 2
         elif program == "git" and (value in GIT_FLAGS or re.match(r"--(git-dir|work-tree|namespace)=", value)):
             i += 1
@@ -74,9 +82,20 @@ def subcommand_index(program: str, args: list) -> int:
     raise Undecidable("no subcommand")
 
 
+def static_or_raw(node: Node) -> str:
+    try:
+        return static_value(node)
+    except Undecidable:
+        return node.text.decode()
+
+
+def plain(node: Node) -> bool:
+    return node.text.decode() == static_or_raw(node)
+
+
 def hidden_call(args: list) -> bool:
     """Tell whether a later word starts a git or gh call with options before its subcommand."""
-    values = [arg.text.decode() for arg in args]
+    values = [static_or_raw(arg) for arg in args]
     for word, following in itertools.pairwise(values):
         if word.lstrip("=") == "git" and following.split("=")[0] in GIT_GLOBAL:
             return True
@@ -85,7 +104,12 @@ def hidden_call(args: list) -> bool:
     return False
 
 
-def check(command: Node, source: bytes, rules: dict):
+def possible_call(text: str) -> bool:
+    """Tell whether git or gh may appear as a word once quotes, escapes and line continuations are removed."""
+    return re.search(r"(?<![\w.-])(git|gh)(?![\w-])", re.sub(r"\\\n|['\"\\]", "", text)) is not None
+
+
+def check(command: Node, source: bytes, rules: dict, possible: bool):
     """Return the decision and its reason for one simple command, or None."""
     name = command.child_by_field_name("name")
     args = command.children_by_field_name("argument")
@@ -96,50 +120,97 @@ def check(command: Node, source: bytes, rules: dict):
     try:
         program = static_value(name).lstrip("=")
     except Undecidable:
-        program = None
+        if possible or (args and static_or_raw(args[0]).split("=")[0] in GIT_GLOBAL | {"-R", "--repo"}):
+            return "ask", "The command name expands, so it could not be checked against the git and gh rules."
+        return None
     if program not in ("git", "gh"):
         if hidden_call(args):
             return "ask", "A git or gh call with options before its subcommand is nested in another command."
         return None
+    if not args:
+        return None
     try:
         sub = subcommand_index(program, args)
-        if sub == 0:
+        if sub == 0 and name.text.decode() == program and plain(args[0]):
             return None
-        static_value(args[sub])
+        subcommand = static_value(args[sub])
     except (Undecidable, IndexError):
         return "ask", f"The options before the {program} subcommand could not be resolved."
-    normalized = f"{program} " + source[args[sub].start_byte : args[-1].end_byte].decode()
+    normalized = f"{program} {subcommand}" + source[args[sub].end_byte : args[-1].end_byte].decode()
     for kind in ("deny", "ask"):
         if any(match(normalized) for match in rules[kind]):
-            return kind, f"Matches a {kind} rule once the options before the subcommand are removed: {normalized}"
+            return kind, f"Matches a {kind} rule once written as plain {program}: {normalized}"
     if not any(match(normalized) for match in rules["allow"]):
-        return "ask", f"Not allowed once the options before the subcommand are removed: {normalized}"
+        return "ask", f"Not allowed once written as plain {program}: {normalized}"
     return None
 
 
-def commands(node: Node):
-    if node.type == "command":
+def nodes(root: Node):
+    stack = [root]
+    while stack:
+        node = stack.pop()
         yield node
-    for child in node.children:
-        yield from commands(child)
+        stack.extend(reversed(node.children))
 
 
-def main():
-    text = json.load(sys.stdin).get("tool_input", {}).get("command") or ""
-    if "git" not in text and "gh" not in text:
-        return
-    source = text.encode()
+def unparsed_substitution(node: Node) -> bool:
+    """Tell whether a heredoc body or ${...} expansion holds a substitution that was not parsed."""
+    if node.type == "heredoc_body":
+        start = next((child for child in node.parent.children if child.type == "heredoc_start"), None)
+        if start is None or re.search(r"['\"\\]", start.text.decode()):
+            return False
+    elif node.type != "expansion":
+        return False
+    text = node.text.decode()
+    markers = text.count("$(") + text.count("`") // 2
+    parsed = sum(1 for child in nodes(node) if child.type in ("command_substitution", "arithmetic_expansion"))
+    return markers > parsed or ("`" in text and not parsed)
+
+
+def escaped_backtick(node: Node) -> bool:
+    text = node.text.decode()
+    return node.type == "command_substitution" and text.startswith("`") and "\\`" in text
+
+
+def decisions_for(text: str, rules: dict) -> list:
+    source = text.encode("utf-8", "surrogatepass")
     tree = Parser(Language(tree_sitter_bash.language())).parse(source)
-    rules = load_rules(sys.argv[1])
-    decisions = [d for d in (check(c, source, rules) for c in commands(tree.root_node)) if d]
-    if tree.root_node.has_error or "\\`" in text:
+    possible = possible_call(text)
+    all_nodes = list(nodes(tree.root_node))
+    decisions = [d for d in (check(n, source, rules, possible) for n in all_nodes if n.type == "command") if d]
+    unchecked = any(unparsed_substitution(n) for n in all_nodes)
+    if possible and (tree.root_node.has_error or any(escaped_backtick(n) for n in all_nodes)):
+        unchecked = True
+    if unchecked:
         decisions.append(("ask", "The command could not be parsed, so its git and gh calls could not be checked."))
+    return decisions
+
+
+def decide(text: str, rules_path: str):
+    rules = load_rules(rules_path)
+    decisions = decisions_for(text, rules)
+    if "\\\n" in text:
+        decisions += decisions_for(text.replace("\\\n", ""), rules)
     for kind in ("deny", "ask"):
         reasons = [reason for decision, reason in decisions if decision == kind]
         if reasons:
-            output = {"hookEventName": "PreToolUse", "permissionDecision": kind, "permissionDecisionReason": reasons[0]}
-            print(json.dumps({"hookSpecificOutput": output}))
-            return
+            return kind, reasons[0]
+    return None
+
+
+def main():
+    try:
+        text = json.load(sys.stdin).get("tool_input", {}).get("command") or ""
+        decision = decide(text, sys.argv[1])
+    except Exception as error:  # noqa: BLE001
+        decision = ("ask", f"The subcommand guard failed ({type(error).__name__}), so this command needs confirmation.")
+    if decision:
+        output = {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": decision[0],
+            "permissionDecisionReason": decision[1],
+        }
+        print(json.dumps({"hookSpecificOutput": output}))
 
 
 main()

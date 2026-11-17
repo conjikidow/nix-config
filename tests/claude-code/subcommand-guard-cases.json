@@ -8,7 +8,8 @@
       "git --no-pager -C /repo clean -fd",
       "git -C /repo commit --no-verify -m x",
       "gh -R o/r secret list",
-      "gh --repo=o/r release delete v1"
+      "gh --repo=o/r release delete v1",
+      "git -C r reset --ha''rd HEAD"
     ],
     "a denied call after another command or a heredoc": [
       "git -C /repo status && git -C /repo stash drop",

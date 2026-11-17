@@ -150,7 +150,7 @@ def check(command: Node, source: bytes, rules: dict, possible: bool):
         subcommand = static_value(args[sub])
     except (Undecidable, IndexError):
         return "ask", f"The options before the {program} subcommand could not be resolved."
-    normalized = f"{program} {subcommand}" + source[args[sub].end_byte : args[-1].end_byte].decode()
+    normalized = " ".join([program, subcommand, *(static_or_raw(arg) for arg in args[sub + 1 :])])
     for kind in ("deny", "ask"):
         if any(match(normalized) for match in rules[kind]):
             return kind, f"Matches a {kind} rule once written as plain {program}: {normalized}"

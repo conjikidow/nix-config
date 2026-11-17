@@ -44,6 +44,7 @@
       "git -C /repo restore src/f.py",
       "git -C /repo restore --staged f",
       "git -C /repo checkout -- f",
+      "git -C r push +main",
       "git -C r worktree remove -f ../w",
       "git -C r rebase -x make main",
       "git -C r clone --config core.fsmonitor=x u",

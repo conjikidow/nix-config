@@ -493,6 +493,7 @@
       "Bash(git *push *--force*)",
       "Bash(git *push *--mirror*)",
       "Bash(git *push *--prune*)",
+      "Bash(git *push +*)",
       "Bash(git *push -d *)",
       "Bash(git *push -f*)",
       "Bash(git *rebase * -i*)",

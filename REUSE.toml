@@ -44,12 +44,12 @@ SPDX-License-Identifier = "MIT OR Apache-2.0"
 
 [[annotations]]
 path = [
+  "home-modules/agents/permissions.json",
+  "home-modules/agents/rules/**",
+  "home-modules/agents/skills/**",
   "home-modules/claude-code/CLAUDE.md",
-  "home-modules/claude-code/managed-settings.json",
-  "home-modules/claude-code/rules/**",
-  "home-modules/claude-code/skills/**",
   "home-modules/codex/AGENTS.md",
-  "tests/claude-code/subcommand-guard-cases.json",
+  "tests/agents/subcommand-guard-cases.json",
 ]
 SPDX-FileCopyrightText = "2026 Riki Nakamura"
 SPDX-License-Identifier = "MIT OR Apache-2.0"

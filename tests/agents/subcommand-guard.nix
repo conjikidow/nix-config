@@ -7,10 +7,10 @@
 let
   inherit (config.xdg) dataFile;
 in
-pkgs.runCommand "claude-code-subcommand-guard-test" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+pkgs.runCommand "agents-subcommand-guard-test" { nativeBuildInputs = [ pkgs.python3 ]; } ''
   python3 ${./subcommand-guard-test.py} \
-    ${dataFile."claude-code/subcommand-guard".source} \
-    ${dataFile."claude-code/permission-rules.json".source} \
+    ${dataFile."agents/subcommand-guard".source} \
+    ${dataFile."agents/permission-rules.json".source} \
     ${./subcommand-guard-cases.json}
   touch "$out"
 ''

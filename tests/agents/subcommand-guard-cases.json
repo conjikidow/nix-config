@@ -55,7 +55,9 @@
       "cd x && nice -n 5 git status",
       "cd x && env =git status",
       "(cd x; git status)",
-      "f() { cd x; git status; }"
+      "f() { cd x; git status; }",
+      "cd x && env -u FOO git status",
+      "cd x && env timeout 5 git status"
     ]
   },
   "ask": {
@@ -258,5 +260,53 @@
       "echo \"$(cd x; pwd)\"; git status",
       "(cd x && ls); git status"
     ]
+  },
+  "deny-only": {
+    "deny": {
+      "a command that a deny rule matches, in any position": [
+        "git reset HEAD~1 --hard",
+        "git -C r reset -q --hard",
+        "git stash drop",
+        "git commit -m x --no-verify",
+        "gh repo delete o/r --yes",
+        "npm install x -g",
+        "npm -g install x",
+        "npm -L global install x",
+        "npm --global=true install x",
+        "npm -g=true install x",
+        "sudo ls",
+        "dd if=img of=/dev/sda",
+        "uv tool install ruff"
+      ],
+      "a denied command behind a wrapper": [
+        "timeout 5 git reset --hard",
+        "env FOO=1 sudo ls",
+        "xargs gh repo delete",
+        "nice -n 5 npm install -g x",
+        "env -u FOO sudo ls",
+        "timeout -s KILL 5 sudo ls",
+        "env timeout 5 sudo ls",
+        "nice -n 5 env sudo ls",
+        "xargs -I {} sudo rm {}",
+        "timeout .1 kill 1",
+        "timeout 1e0 kill 1",
+        "xargs --eof kill 1",
+        "xargs --replace kill 1",
+        "env env env env env env env env env kill 1"
+      ]
+    },
+    "none": {
+      "commands that no deny rule matches": [
+        "git reset HEAD~1",
+        "git push origin feat/x",
+        "npm install x",
+        "gh pr view 1",
+        "rm -rf build",
+        "curl https://example.com",
+        "env FOO=1 ls",
+        "timeout 5 ls",
+        "kill 1234"
+      ]
+    }
   }
 }

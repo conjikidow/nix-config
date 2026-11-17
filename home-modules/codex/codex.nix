@@ -5,7 +5,7 @@
 { lib, ... }:
 
 let
-  claudeCode = ../claude-code;
+  agents = ../agents;
 
   conventions = [
     "chat-math"
@@ -25,14 +25,16 @@ let
     typst = "Line break conventions for Typst sources. Use when writing or editing a Typst file.";
   };
 
-  rule = name: builtins.readFile (claudeCode + "/rules/${name}.md");
+  rule = name: builtins.readFile (agents + "/rules/${name}.md");
 in
 {
+  imports = [ ./permissions.nix ];
+
   programs.codex = {
     context = lib.concatStringsSep "\n" ([ (builtins.readFile ./AGENTS.md) ] ++ map rule conventions);
 
     skills =
-      lib.mapAttrs (name: _: claudeCode + "/skills/${name}") (builtins.readDir (claudeCode + "/skills"))
+      lib.mapAttrs (name: _: agents + "/skills/${name}") (builtins.readDir (agents + "/skills"))
       // lib.mapAttrs (name: description: ''
         ---
         name: ${name}

@@ -49,6 +49,7 @@ path = [
   "home-modules/claude-code/rules/**",
   "home-modules/claude-code/skills/**",
   "home-modules/codex/AGENTS.md",
+  "tests/claude-code/subcommand-guard-cases.json",
 ]
 SPDX-FileCopyrightText = "2026 Riki Nakamura"
 SPDX-License-Identifier = "MIT OR Apache-2.0"

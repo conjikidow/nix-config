@@ -108,6 +108,10 @@
               (!(mkConfig { }).local.desktop.enable && (mkConfig { enableDesktop = true; }).local.desktop.enable)
               "local.desktop.enable is switched by the configuration you apply, not by a definition in a module.";
             (mkPkgs system).emptyFile;
+          claude-code-subcommand-guard = import ./tests/claude-code/subcommand-guard.nix {
+            pkgs = mkPkgs system;
+            config = mkConfig { };
+          };
         }
       );
     };

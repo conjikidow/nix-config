@@ -3,38 +3,38 @@
     "options before a denied subcommand": [
       "git -C /repo credential fill diff",
       "git -C /repo stash drop",
+      "FOO=1 git -C /repo stash drop",
       "git -C /repo reset --hard HEAD",
       "git --no-pager -C /repo clean -fd",
       "git -C /repo commit --no-verify -m x",
       "gh -R o/r secret list",
-      "gh --repo=o/r release delete v1",
-      "FOO=1 git -C /repo stash drop"
+      "gh --repo=o/r release delete v1"
     ],
     "a denied call after another command or a heredoc": [
       "git -C /repo status && git -C /repo stash drop",
+      "git -C r log a#b; git -C r stash drop",
+      "(( x << 2 )); git -C r stash drop",
       "git -C /repo commit -F - <<'EOF2'\nbody\nEOF2\ngit -C /repo stash drop",
       "git -C /tmp/repo diff <<'E\"OF'\nbody\nE\"OF\ngit -C /tmp/repo reset --hard HEAD~1",
       "git -C r diff <<\\EOF\nbody\nEOF\ngit -C r stash drop",
-      "cat <<A <<B\na\nA\nb\nB\ngit -C r stash drop",
-      "git -C r log a#b; git -C r stash drop",
-      "(( x << 2 )); git -C r stash drop"
+      "cat <<A <<B\na\nA\nb\nB\ngit -C r stash drop"
     ],
     "an argument that matches a deny rule": [
       "git -C /repo commit -m \"$(cat <<'EOF2'\nfix: x\n\ngit -C x stash drop here\nEOF2\n)\""
     ],
     "git or gh spelled with quotes, escapes or expansions": [
+      "g''it -C /repo reset --hard HEAD",
+      "g''it stash drop",
+      "g\\it -C /repo stash drop",
+      "g\\\nit -C r stash drop",
+      "\"git\" stash drop",
+      "git 'stash' drop",
+      "git -C r 'stash' drop",
+      "$'git' stash drop",
+      "$'\\x67it' reset --hard HEAD",
       "git -C /tmp diff; =git -C /tmp reset --hard",
       "=gh -R o/r secret list",
-      "g''it -C /repo reset --hard HEAD",
-      "g\\it -C /repo stash drop",
-      "g''it stash drop",
-      "\"git\" stash drop",
-      "$'git' stash drop",
-      "$'gh' secret list",
-      "$'\\x67it' reset --hard HEAD",
-      "g\\\nit -C r stash drop",
-      "git 'stash' drop",
-      "git -C r 'stash' drop"
+      "$'gh' secret list"
     ]
   },
   "ask": {
@@ -42,10 +42,13 @@
       "git -C /repo config diff.external /tmp/x.sh",
       "git -C /repo remote add evil https://x",
       "git -C /repo restore src/f.py",
+      "git -C /repo restore --staged f",
       "git -C /repo checkout -- f",
+      "git -C r worktree remove -f ../w",
+      "git -C r rebase -x make main",
+      "git -C r clone --config core.fsmonitor=x u",
       "gh -R o/r pr merge 1",
-      "gh -R o/r repo edit --description x",
-      "git -C /repo restore --staged f"
+      "gh -R o/r repo edit --description x"
     ],
     "option values with quotes, spaces or control characters": [
       "git -C . --namespace \"x log y\" config core.hooksPath /tmp/e",
@@ -60,15 +63,15 @@
       "git -C . --namespace <<<x diff config core.hooksPath /tmp/e"
     ],
     "global options that cannot be resolved": [
+      "git -C",
       "git -C . -c core.pager=evil log",
       "git --exec-path=/tmp log",
       "git --unknown-opt status",
-      "git -C",
-      "gh -R",
       "git -C . --namespace $u diff config core.hooksPath /tmp/e",
       "git -C {.,--namespace} diff config core.hooksPath /tmp/e",
       "git -C . --namespace x(N) diff config core.hooksPath /tmp/e",
       "git -C . --namespace (x_none)(N) diff config core.hooksPath /tmp/e",
+      "gh -R",
       "gh --yes repo delete o/r",
       "gh -R o/r --yes repo delete o/r",
       "gh --limit 1 pr list"
@@ -79,15 +82,15 @@
       "! git -C r config core.pager diff",
       "if git -C r config core.pager diff; then echo; fi",
       "for x in 1; do git -C r config core.pager diff; done",
+      "function f { git -C r config core.pager diff; }; f",
       "cat $(git -C r config core.pager diff)",
       "cat `git -C r config core.pager diff`",
       "cat <(git -C r config core.pager diff)",
-      ">/dev/null git -C r config core.pager diff",
-      "2>/dev/null git -C r config core.pager diff",
       "cat <<EOF\n$(git -C r config core.pager diff)\nEOF",
       "echo $(case x in a) git -C r config core.pager diff;; esac)",
       "echo $(case x in a)git -C r config core.pager diff;; esac)",
-      "function f { git -C r config core.pager diff; }; f"
+      ">/dev/null git -C r config core.pager diff",
+      "2>/dev/null git -C r config core.pager diff"
     ],
     "a call after a line continuation, comment, arithmetic or quoted heredoc": [
       "git \\\n-C r config core.pager diff",
@@ -97,19 +100,24 @@
     ],
     "a call behind a wrapper or coproc": [
       "timeout 30 git -C /repo stash",
-      "command git -C /repo stash",
       "timeout 30 git -C /repo fetch",
-      "nice -n 5 git -C /repo merge x",
       "timeout --weird 5 git -C r stash",
-      "xargs git -C r config core.pager diff",
-      "ls | xargs git -C r config core.pager diff",
-      "nice --adjustment 5 git -C r config core.pager diff",
-      "stdbuf -o L git -C r config core.pager diff",
       "timeout -s KILL 5 git -C r config core.pager diff",
       "timeout -k 5 10 git -C r config core.pager diff",
-      "command -p git -C r config core.pager diff",
       "timeout 30 \"git\" -C r config core.pager diff",
       "timeout 30 \\git -C r config core.pager diff",
+      "timeout 5 git --attr-source HEAD config core.pager evil",
+      "command git -C /repo stash",
+      "command -p git -C r config core.pager diff",
+      "command git --attr-source HEAD stash",
+      "nice -n 5 git -C /repo merge x",
+      "nice --adjustment 5 git -C r config core.pager diff",
+      "nohup git --attr-source=HEAD restore .",
+      "time git --attr-source HEAD remote add e https://x",
+      "stdbuf -o L git -C r config core.pager diff",
+      "xargs git -C r config core.pager diff",
+      "ls | xargs git -C r config core.pager diff",
+      "xargs git --list-cmds=main config x y",
       "coproc git -C r config core.pager diff",
       "git -C /tmp diff README; coproc git -C /tmp stash",
       "git -C /tmp diff README; coproc git -C /tmp worktree remove --force /tmp/w"
@@ -119,8 +127,8 @@
       "$(printf git) stash"
     ],
     "a command that does not parse": [
-      "git -C r diff <<EOF\nno terminator",
       "git -C r diff <<EOF",
+      "git -C r diff <<EOF\nno terminator",
       "echo \"x; git -C r config core.pager diff",
       "((cat <<'EOF2'\nit's\nEOF2\n); git -C r config core.pager diff)",
       "echo `echo \\`git -C r config core.pager diff\\``"
@@ -129,39 +137,41 @@
       "cat <<EOF\n\t$(git -C r config core.pager diff)\nEOF",
       "cat <<EOF\nx\n  $(git -C r config core.pager diff)\nEOF",
       "cat <<-EOF\n\t$(git -C r config core.pager diff)\n\tEOF",
+      "cat <<EOF\n\t$((git -C r config core.pager diff); echo)\nEOF",
+      "cat <<EOF\n$((echo a); echo b)\n\t$(git -C r config core.pager diff)\nEOF",
       "git -C r commit -F - <<EOF\nfix: use `git -C r config core.pager diff`\nEOF",
       "echo ${x:-`git -C r config core.pager diff`}",
-      "echo \"${x:-`git -C r config core.pager diff`}\"",
-      "cat <<EOF\n\t$((git -C r config core.pager diff); echo)\nEOF",
-      "cat <<EOF\n$((echo a); echo b)\n\t$(git -C r config core.pager diff)\nEOF"
+      "echo \"${x:-`git -C r config core.pager diff`}\""
     ]
   },
   "none": {
     "allowed once the options before the subcommand are removed": [
       "git -C . status",
+      "git -C ~/repo status",
+      "git -C \"/a b\" status",
+      "git -C \"$r\" status",
+      "git -C \"$PWD\" status",
       "git -C /repo diff --stat",
       "git -C /repo log --oneline -5",
+      "git -C r log --format='%h (%s)'",
       "git -C /repo add file.nix",
       "git -C /repo commit -m \"update config file\"",
       "git -C /repo push origin feat/x",
-      "gh -R o/r pr view 1",
-      "gh -R o/r issue list",
-      "gh --repo o/r pr checks 1",
-      "gh --repo=o/r run list",
-      "git -C \"/a b\" status",
-      "git -C /repo status && git -C /repo log",
-      "git -C /repo status 2>&1 | head",
-      "git -C /repo log --oneline -3 > /dev/null",
-      "git -C ~/repo status",
-      "git -C r log --format='%h (%s)'",
-      "git -C r status >/dev/null 2>&1",
-      "git -C r diff > /tmp/o",
-      "gh -R o/r issue list --search \"is:open (bug)\"",
-      "git -C \"$r\" status",
-      "git -C \"$PWD\" status",
       "git -C /repo rebase tag-v1",
       "git -C /repo merge main",
-      "git -C /repo status; git -C /repo merge x"
+      "git -C r switch -c feat/x",
+      "git -C r worktree remove ../w",
+      "git -C /repo status && git -C /repo log",
+      "git -C /repo status; git -C /repo merge x",
+      "git -C /repo status 2>&1 | head",
+      "git -C /repo log --oneline -3 > /dev/null",
+      "git -C r status >/dev/null 2>&1",
+      "git -C r diff > /tmp/o",
+      "gh -R o/r pr view 1",
+      "gh -R o/r issue list",
+      "gh -R o/r issue list --search \"is:open (bug)\"",
+      "gh --repo o/r pr checks 1",
+      "gh --repo=o/r run list"
     ],
     "a call after arithmetic or in a for loop": [
       "(( x << 2 )); git -C r status",
@@ -170,33 +180,34 @@
     ],
     "git or gh only in quoted text, comments or quoted heredocs": [
       "echo \"git -C x config\"",
-      "git commit -m 'fix; git -C r stash x'",
-      "git commit -m \"fix && git -C r stash\"",
       "echo \"use git -C here\"",
       "grep -n 'git -C' file",
+      "git commit -m 'fix; git -C r stash x'",
+      "git commit -m \"fix && git -C r stash\"",
+      "git -C r commit -m \"fix: use \\`x\\`\"",
       "git -C /repo commit -F - <<'EOF2'\nfix: x\n\ngit -C x stash is mentioned; git -C y config a b\nEOF2",
-      "git -C /tmp/repo diff # git -C /tmp/repo reset --hard",
-      "git -C r log --oneline #comment; git -C r stash",
-      "git -C r commit -F - <<-EOF\n\tbody git -C x stash\n\tEOF",
-      "cat <<'EOF'\n$(git -C r config core.pager diff)\nEOF",
       "git -C r commit -F - <<'EOF'\nfix: use `x` and $(y)\nEOF",
-      "git -C r commit -m \"fix: use \\`x\\`\""
+      "cat <<'EOF'\n$(git -C r config core.pager diff)\nEOF",
+      "git -C r commit -F - <<-EOF\n\tbody git -C x stash\n\tEOF",
+      "git -C /tmp/repo diff # git -C /tmp/repo reset --hard",
+      "git -C r log --oneline #comment; git -C r stash"
     ],
-    "no options before the subcommand": [
+    "no options before the subcommand, or only --version or --help": [
       "git status",
-      "gh pr view 1",
       "git",
-      "gh",
       "git --version",
       "git --help",
+      "timeout 5 git --version",
+      "gh pr view 1",
+      "gh",
       "gh --version",
       "gh --help"
     ],
     "no git or gh call": [
       "ls -la",
+      "\"$EDITOR\" notes.txt",
       "grep git -rn .",
       "rg git -g \"*.nix\"",
-      "\"$EDITOR\" notes.txt",
       "grep '\\`' f"
     ],
     "zsh syntax": [

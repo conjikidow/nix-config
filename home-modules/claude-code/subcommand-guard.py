@@ -16,6 +16,8 @@ GIT_FLAGS |= {"--no-optional-locks", "--no-advice", "--literal-pathspecs", "--gl
 GIT_FLAGS |= {"--noglob-pathspecs", "--icase-pathspecs"}
 GIT_GLOBAL = GIT_OPTIONS_WITH_VALUE | GIT_FLAGS | {"-c", "--exec-path", "--config-env"}
 
+WRAPPERS = {"timeout", "time", "nice", "nohup", "stdbuf", "command", "builtin", "noglob", "xargs"}
+
 STATIC_STRING_PARTS = {'"', "string_content"}
 
 
@@ -96,10 +98,17 @@ def plain(node: Node) -> bool:
     return node.text.decode() == static_or_raw(node)
 
 
-def hidden_call(args: list) -> bool:
-    """Tell whether a later word starts a git or gh call with options before its subcommand."""
+def hidden_call(args: list, wrapped: bool) -> bool:
+    """Tell whether a later word starts a git or gh call with options before its subcommand.
+
+    Behind a wrapper, any option counts; elsewhere only the git and gh global options do.
+    """
     values = [static_or_raw(arg) for arg in args]
     for word, following in itertools.pairwise(values):
+        if word.lstrip("=") not in ("git", "gh") or not following.startswith("-"):
+            continue
+        if wrapped and following not in ("--version", "--help", "-h"):
+            return True
         if word.lstrip("=") == "git" and following.split("=")[0] in GIT_GLOBAL:
             return True
         if word.lstrip("=") == "gh" and re.match(r"(-R|--repo)", following):
@@ -127,7 +136,7 @@ def check(command: Node, source: bytes, rules: dict, possible: bool):
             return "ask", "The command name expands, so it could not be checked against the git and gh rules."
         return None
     if program not in ("git", "gh"):
-        if hidden_call(args):
+        if hidden_call(args, program in WRAPPERS):
             return "ask", "A git or gh call with options before its subcommand is nested in another command."
         return None
     if not args or [static_or_raw(arg) for arg in args] in (["--version"], ["--help"], ["-h"]):

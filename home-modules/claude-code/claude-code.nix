@@ -6,7 +6,10 @@
 { lib, ... }:
 
 {
-  imports = [ ./managed-settings.nix ];
+  imports = [
+    ./managed-settings.nix
+    ./subcommand-guard.nix
+  ];
 
   programs.claude-code = {
     enable = true;

@@ -2,52 +2,50 @@
   "deny": {
     "options before a denied subcommand": [
       "git -C /repo credential fill diff",
-      "git -C /repo stash",
+      "git -C /repo stash drop",
       "git -C /repo reset --hard HEAD",
       "git --no-pager -C /repo clean -fd",
       "git -C /repo commit --no-verify -m x",
       "gh -R o/r secret list",
       "gh --repo=o/r release delete v1",
-      "FOO=1 git -C /repo stash"
+      "FOO=1 git -C /repo stash drop"
     ],
     "a denied call after another command or a heredoc": [
-      "git -C /repo status && git -C /repo stash",
-      "git -C /repo commit -F - <<'EOF2'\nbody\nEOF2\ngit -C /repo stash",
+      "git -C /repo status && git -C /repo stash drop",
+      "git -C /repo commit -F - <<'EOF2'\nbody\nEOF2\ngit -C /repo stash drop",
       "git -C /tmp/repo diff <<'E\"OF'\nbody\nE\"OF\ngit -C /tmp/repo reset --hard HEAD~1",
-      "git -C r diff <<\\EOF\nbody\nEOF\ngit -C r stash",
-      "cat <<A <<B\na\nA\nb\nB\ngit -C r stash",
-      "git -C r log a#b; git -C r stash",
-      "(( x << 2 )); git -C r stash"
+      "git -C r diff <<\\EOF\nbody\nEOF\ngit -C r stash drop",
+      "cat <<A <<B\na\nA\nb\nB\ngit -C r stash drop",
+      "git -C r log a#b; git -C r stash drop",
+      "(( x << 2 )); git -C r stash drop"
     ],
     "an argument that matches a deny rule": [
-      "git -C /repo commit -m \"$(cat <<'EOF2'\nfix: x\n\ngit -C x stash here\nEOF2\n)\""
+      "git -C /repo commit -m \"$(cat <<'EOF2'\nfix: x\n\ngit -C x stash drop here\nEOF2\n)\""
     ],
     "git or gh spelled with quotes, escapes or expansions": [
       "git -C /tmp diff; =git -C /tmp reset --hard",
       "=gh -R o/r secret list",
       "g''it -C /repo reset --hard HEAD",
-      "g\\it -C /repo stash",
-      "g''it stash",
-      "\"git\" stash list",
-      "$'git' stash",
+      "g\\it -C /repo stash drop",
+      "g''it stash drop",
+      "\"git\" stash drop",
+      "$'git' stash drop",
       "$'gh' secret list",
       "$'\\x67it' reset --hard HEAD",
-      "g\\\nit -C r stash",
-      "git 'stash'",
-      "git -C r 'stash'"
+      "g\\\nit -C r stash drop",
+      "git 'stash' drop",
+      "git -C r 'stash' drop"
     ]
   },
   "ask": {
     "a subcommand that is asked or not allowed": [
       "git -C /repo config diff.external /tmp/x.sh",
       "git -C /repo remote add evil https://x",
-      "git -C /repo rebase tag-v1",
-      "git -C /repo merge main",
       "git -C /repo restore src/f.py",
       "git -C /repo checkout -- f",
       "gh -R o/r pr merge 1",
       "gh -R o/r repo edit --description x",
-      "git -C /repo status; git -C /repo merge x"
+      "git -C /repo restore --staged f"
     ],
     "option values with quotes, spaces or control characters": [
       "git -C . --namespace \"x log y\" config core.hooksPath /tmp/e",
@@ -143,7 +141,6 @@
       "git -C /repo add file.nix",
       "git -C /repo commit -m \"update config file\"",
       "git -C /repo push origin feat/x",
-      "git -C /repo restore --staged f",
       "gh -R o/r pr view 1",
       "gh -R o/r issue list",
       "gh --repo o/r pr checks 1",
@@ -158,7 +155,10 @@
       "git -C r diff > /tmp/o",
       "gh -R o/r issue list --search \"is:open (bug)\"",
       "git -C \"$r\" status",
-      "git -C \"$PWD\" status"
+      "git -C \"$PWD\" status",
+      "git -C /repo rebase tag-v1",
+      "git -C /repo merge main",
+      "git -C /repo status; git -C /repo merge x"
     ],
     "a call after arithmetic or in a for loop": [
       "(( x << 2 )); git -C r status",

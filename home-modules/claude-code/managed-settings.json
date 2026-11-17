@@ -657,5 +657,15 @@
         ]
       }
     ]
-  }
+  },
+  "readDenyExcept": [
+    {
+      "patternPrefix": "//**/.env.",
+      "exceptions": [
+        "example",
+        "sample",
+        "template"
+      ]
+    }
+  ]
 }

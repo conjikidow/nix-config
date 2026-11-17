@@ -16,6 +16,11 @@ GIT_FLAGS |= {"--no-optional-locks", "--no-advice", "--literal-pathspecs", "--gl
 GIT_FLAGS |= {"--noglob-pathspecs", "--icase-pathspecs"}
 GIT_GLOBAL = GIT_OPTIONS_WITH_VALUE | GIT_FLAGS | {"-c", "--exec-path", "--config-env"}
 
+CD_BEFORE_GIT = (
+    "Use `git -C <path> <subcmd>` instead of `cd <path> && git ...` (rules/git-commands.md). "
+    "Repeat git -C for each git when chaining."
+)
+
 WRAPPERS = {"timeout", "time", "nice", "nohup", "stdbuf", "command", "builtin", "noglob", "xargs"}
 
 STATIC_STRING_PARTS = {'"', "string_content"}
@@ -186,12 +191,78 @@ def escaped_backtick(node: Node) -> bool:
     return node.type == "command_substitution" and text.startswith("`") and "\\`" in text
 
 
+def program_and_args(command: Node) -> tuple:
+    name = command.child_by_field_name("name")
+    if name is not None and name.type == "command_name" and name.named_children:
+        name = name.named_children[0]
+    program = static_or_raw(name).lstrip("=") if name is not None else ""
+    return program, [static_or_raw(arg) for arg in command.children_by_field_name("argument")]
+
+
+def git_options_without_directory(args: list) -> bool:
+    """Tell whether the global options before the git subcommand lack -C."""
+    i = 0
+    while i < len(args) and args[i].startswith("-"):
+        if args[i] == "-C":
+            return False
+        i += 2 if args[i] in GIT_OPTIONS_WITH_VALUE else 1
+    return True
+
+
+def git_without_directory(program: str, args: list) -> bool:
+    """Tell whether the command runs git, directly or as the program of a wrapper, without -C."""
+    if program == "git":
+        return git_options_without_directory(args)
+    if program not in WRAPPERS | {"env"} or (program == "command" and args[:1] in (["-v"], ["-V"])):
+        return False
+    for i, word in enumerate(args):
+        if word.startswith("-") or re.match(r"[A-Za-z_]\w*=", word) or re.fullmatch(r"\d+(\.\d+)?[smhd]?", word):
+            continue
+        return word.lstrip("=") == "git" and git_options_without_directory(args[i + 1 :])
+    return False
+
+
+SCOPES = {"subshell", "command_substitution", "process_substitution", "function_definition"}
+
+
+def scope_of(node: Node) -> Node:
+    """Return the innermost subshell, substitution or function body holding the node, or the root."""
+    while node.parent is not None and node.parent.type not in SCOPES:
+        node = node.parent
+    return node.parent or node
+
+
+def inside(node: Node, scope: Node) -> bool:
+    while node is not None:
+        if node == scope:
+            return True
+        node = node.parent
+    return False
+
+
+def cd_before_git(commands: list) -> bool:
+    """Tell whether a git call without -C runs after a cd or pushd within the cd's scope."""
+    directory_changes = []
+    for command in commands:
+        program, args = program_and_args(command)
+        if program in ("cd", "pushd"):
+            directory_changes.append((command.end_byte, scope_of(command)))
+        elif git_without_directory(program, args) and any(
+            command.start_byte >= end and inside(command, scope) for end, scope in directory_changes
+        ):
+            return True
+    return False
+
+
 def decisions_for(text: str, rules: dict) -> list:
     source = text.encode("utf-8", "surrogatepass")
     tree = Parser(Language(tree_sitter_bash.language())).parse(source)
     possible = possible_call(text)
     all_nodes = list(nodes(tree.root_node))
-    decisions = [d for d in (check(n, source, rules, possible) for n in all_nodes if n.type == "command") if d]
+    commands = [n for n in all_nodes if n.type == "command"]
+    decisions = [d for d in (check(n, source, rules, possible) for n in commands) if d]
+    if cd_before_git(commands):
+        decisions.append(("deny", CD_BEFORE_GIT))
     unchecked = any(unparsed_substitution(n) for n in all_nodes)
     if possible and (tree.root_node.has_error or any(escaped_backtick(n) for n in all_nodes)):
         unchecked = True

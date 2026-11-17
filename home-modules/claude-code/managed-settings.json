@@ -800,19 +800,6 @@
       "Read(~/.zsh_history)"
     ]
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.command // empty' | tr '\\n' ';' | grep -qE '(^|[&;|({!]|(^|[^[:alnum:]_])(if|then|elif|else|do|while|until)[[:space:]])[[:space:]]*(cd|pushd)[[:space:]].*[&;|({][[:space:]]*(([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*|command|timeout[[:space:]]+[^[:space:]]+|then|do|else|elif|!)[[:space:]]+)*git([[:space:]]+[^-[:space:]]|[[:space:]]*([;&|)}]|$))' && printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Use `git -C <path> <subcmd>` instead of `cd <path> && git ...` (rules/git-commands.md). Repeat git -C for each git when chaining.\"}}' || true"
-          }
-        ]
-      }
-    ]
-  },
   "readDenyExcept": [
     {
       "patternPrefix": "//**/.env.",

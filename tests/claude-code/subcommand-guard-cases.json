@@ -36,6 +36,26 @@
       "git -C /tmp diff; =git -C /tmp reset --hard",
       "=gh -R o/r secret list",
       "$'gh' secret list"
+    ],
+    "a git call after cd in the same command": [
+      "cd x && git status",
+      "cd x || git status",
+      "cd x\ngit status",
+      "cd x && git",
+      "ls; cd x && git log",
+      "pushd x && git status",
+      "(cd /repo && git status)",
+      "{ cd /repo && git status; }",
+      "if cd x; then git status; fi",
+      "cd x && GIT_PAGER=cat git log",
+      "cd x && command git status",
+      "cd x && timeout 5 git fetch",
+      "cd /repo && env git status",
+      "cd x && git --no-pager log",
+      "cd x && nice -n 5 git status",
+      "cd x && env =git status",
+      "(cd x; git status)",
+      "f() { cd x; git status; }"
     ]
   },
   "ask": {
@@ -125,7 +145,8 @@
       "xargs git --list-cmds=main config x y",
       "coproc git -C r config core.pager diff",
       "git -C /tmp diff README; coproc git -C /tmp stash",
-      "git -C /tmp diff README; coproc git -C /tmp worktree remove --force /tmp/w"
+      "git -C /tmp diff README; coproc git -C /tmp worktree remove --force /tmp/w",
+      "cd x && env git --no-pager -C y status"
     ],
     "a command name that expands": [
       "$G -C r config core.pager diff",
@@ -220,6 +241,22 @@
       "print -l ${(k)assoc}",
       "echo ${(j:,:)arr}",
       "for f (a b) echo $f"
+    ],
+    "cd without a later git call, or git with -C": [
+      "cd x && ls",
+      "git status; cd x",
+      "cd x; gitk",
+      "cd x && git -C y log",
+      "cd x && ls; git -C y status",
+      "echo \"cd x && git status\"",
+      "cat <<'EOF'\ncd /repo && git status\nEOF",
+      "cd x && git --no-pager -C y log",
+      "cd \"$(git rev-parse --show-toplevel)\" && ls",
+      "cd /repo && command -v git",
+      "cd /repo && timeout 5 grep -r git .",
+      "f() { cd x; }; git status",
+      "echo \"$(cd x; pwd)\"; git status",
+      "(cd x && ls); git status"
     ]
   }
 }

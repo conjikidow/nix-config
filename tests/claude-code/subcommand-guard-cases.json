@@ -68,7 +68,10 @@
       "git -C . --namespace $u diff config core.hooksPath /tmp/e",
       "git -C {.,--namespace} diff config core.hooksPath /tmp/e",
       "git -C . --namespace x(N) diff config core.hooksPath /tmp/e",
-      "git -C . --namespace (x_none)(N) diff config core.hooksPath /tmp/e"
+      "git -C . --namespace (x_none)(N) diff config core.hooksPath /tmp/e",
+      "gh --yes repo delete o/r",
+      "gh -R o/r --yes repo delete o/r",
+      "gh --limit 1 pr list"
     ],
     "a call in a compound command, subshell, substitution or function": [
       "( git -C r config core.pager diff )",
@@ -183,7 +186,11 @@
       "git status",
       "gh pr view 1",
       "git",
-      "gh"
+      "gh",
+      "git --version",
+      "git --help",
+      "gh --version",
+      "gh --help"
     ],
     "no git or gh call": [
       "ls -la",

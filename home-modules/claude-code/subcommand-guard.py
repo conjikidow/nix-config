@@ -71,12 +71,15 @@ def subcommand_index(program: str, args: list) -> int:
         if (program == "git" and value in GIT_OPTIONS_WITH_VALUE) or (program == "gh" and value in ("-R", "--repo")):
             option_value(args[i + 1])
             i += 2
-        elif program == "git" and (value in GIT_FLAGS or re.match(r"--(git-dir|work-tree|namespace)=", value)):
+        elif (
+            program == "git"
+            and (value in GIT_FLAGS or re.match(r"--(git-dir|work-tree|namespace)=", value))
+            or program == "gh"
+            and re.match(r"(-R|--repo=).", value)
+        ):
             i += 1
-        elif program == "git" and value.startswith("-"):
+        elif value.startswith("-"):
             raise Undecidable(value)
-        elif program == "gh" and re.match(r"(-R|--repo=).", value):
-            i += 1
         else:
             return i
     raise Undecidable("no subcommand")
@@ -127,7 +130,7 @@ def check(command: Node, source: bytes, rules: dict, possible: bool):
         if hidden_call(args):
             return "ask", "A git or gh call with options before its subcommand is nested in another command."
         return None
-    if not args:
+    if not args or [static_or_raw(arg) for arg in args] in (["--version"], ["--help"], ["-h"]):
         return None
     try:
         sub = subcommand_index(program, args)

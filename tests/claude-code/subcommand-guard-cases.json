@@ -56,7 +56,10 @@
       "git -C \"a diff b\" config core.pager x",
       "git -C . --namespace $'x\\' diff \\'' config core.hooksPath /tmp/e",
       "git -C . --namespace \"${x:-\" diff \"}\" config core.hooksPath /tmp/e",
-      "git -C . --namespace x\u001fshow config core.hooksPath diff"
+      "git -C . --namespace x\u001fshow config core.hooksPath diff",
+      "args=(/repo -c diff.external=/tmp/helper); git -C \"${args[@]}\" diff",
+      "git -C \"$@\" diff",
+      "git -C \"${!prefix@}\" diff"
     ],
     "redirections between the options and the subcommand": [
       "git -C . --namespace >/dev/null diff config core.hooksPath /tmp/e",

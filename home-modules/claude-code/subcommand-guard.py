@@ -63,6 +63,8 @@ def option_value(node: Node) -> None:
     """Fail unless the option value is always exactly one word."""
     if node.type not in ("string", "raw_string", "ansi_c_string"):
         static_value(node)
+    elif node.type == "string" and re.search(r"\$@|\$\{@|\[@\]|\$\{![^}]*@\}", node.text.decode()):
+        raise Undecidable(node.text.decode())
 
 
 def subcommand_index(program: str, args: list) -> int:

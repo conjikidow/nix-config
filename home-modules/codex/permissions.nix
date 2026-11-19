@@ -58,7 +58,7 @@ let
     lib.concatLines (
       [ "# Generated from the agent permission rules." ]
       ++ prefixRules "forbidden" true (lib.filter (lib.hasInfix "*") permissions.deny)
-      ++ prefixRules "prompt" false (lib.filter (lib.hasInfix "*") permissions.ask)
+      ++ prefixRules "prompt" false permissions.ask
     )
   );
 

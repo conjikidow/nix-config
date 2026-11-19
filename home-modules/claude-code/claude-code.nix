@@ -3,20 +3,33 @@
 #
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
-{ lib, ... }:
+{ config, ... }:
 
 {
-  imports = [
-    ./managed-settings.nix
-    ./subcommand-guard.nix
-  ];
+  imports = [ ./managed-settings.nix ];
 
   programs.claude-code = {
     enable = true;
     context = ./CLAUDE.md;
-    rulesDir = ./rules;
-    skills = ./skills;
+    rulesDir = ../agents/rules;
+    skills = ../agents/skills;
   };
 
-  local.claudeCode.managedSettings = lib.importJSON ./managed-settings.json;
+  local.claudeCode.managedSettings = {
+    inherit (config.local.agents) permissions;
+
+    hooks.PreToolUse = [
+      {
+        matcher = "Bash";
+        hooks = [
+          {
+            type = "command";
+            inherit (config.local.agents.subcommandGuard) command;
+            timeout = 30;
+            onFailure = "block";
+          }
+        ];
+      }
+    ];
+  };
 }

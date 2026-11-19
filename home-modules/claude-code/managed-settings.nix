@@ -24,45 +24,6 @@ let
     }
   );
 
-  letters = lib.stringToCharacters "abcdefghijklmnopqrstuvwxyz";
-
-  # Class of the digits, the lowercase letters other than `excluded`, and `._~+@-`.
-  charClass = excluded: "[0-9" + lib.concatStrings (lib.subtractLists excluded letters) + "._~+@-]";
-
-  heads = words: lib.unique (map (lib.substring 0 1) words);
-  tails =
-    c: words: map (w: lib.substring 1 (lib.stringLength w) w) (lib.filter (lib.hasPrefix c) words);
-
-  # Patterns matching every non-empty continuation of `prefix` except the given words, with positive classes only.
-  exceptPatterns =
-    prefix: words:
-    let
-      rest = lib.remove "" words;
-    in
-    if rest == [ ] then
-      [ "${prefix}?*" ]
-    else
-      [ "${prefix}${charClass (heads rest)}*" ]
-      ++ lib.concatMap (
-        c:
-        let
-          sub = tails c rest;
-        in
-        lib.optional (!lib.elem "" sub) "${prefix}${c}" ++ exceptPatterns "${prefix}${c}" sub
-      ) (heads rest);
-
-  readDenyRules =
-    entry:
-    let
-      exceptions = lib.unique entry.exceptions;
-    in
-    map (pattern: "Read(${pattern})") (
-      if exceptions == [ ] then
-        [ "${entry.patternPrefix}*" ]
-      else
-        [ entry.patternPrefix ] ++ exceptPatterns entry.patternPrefix exceptions
-    );
-
   mergeSettings = pkgs.writeShellApplication {
     name = "claude-code-merge-settings";
     runtimeInputs = [
@@ -84,34 +45,10 @@ in
           A rule already present in the settings is left to the user and keeps its place before the managed rules,
           so a `!` rule that the settings already hold does not carve out of a managed rule added after it.
           To remove every managed rule and hook, empty these options and switch once before removing the module.
+          The subcommand guard and Codex read `local.agents.permissions` instead, so put shared rules there.
         '';
       }
     );
-
-    readDenyExcept = lib.mkOption {
-      type = lib.types.listOf (
-        lib.types.submodule {
-          options = {
-            patternPrefix = lib.mkOption {
-              type = lib.types.str;
-              description = "Read rule pattern that the denied file names start with, such as `//**/.env.`.";
-            };
-            exceptions = lib.mkOption {
-              type = lib.types.listOf (lib.types.strMatching "[a-z]+");
-              description = "Lowercase words that may follow `patternPrefix` and stay readable.";
-            };
-          };
-        }
-      );
-      default = [ ];
-      description = ''
-        Read deny rules, added to `permissions.deny`, for every file name that starts with `patternPrefix`,
-        except the names that continue with exactly one of `exceptions`.
-        The exceptions also cover their uppercase spellings.
-        A name whose first character after the shared part of an exception is outside `[0-9a-z._~+@-]`
-        is not denied.
-      '';
-    };
 
     hooks = lib.mkOption {
       type = lib.types.attrsOf (lib.types.listOf jsonType);
@@ -125,8 +62,6 @@ in
   };
 
   config = {
-    local.claudeCode.managedSettings.permissions.deny = lib.concatMap readDenyRules cfg.readDenyExcept;
-
     assertions = [
       {
         assertion =

@@ -209,17 +209,64 @@ def git_options_without_directory(args: list) -> bool:
     return True
 
 
+WRAPPER_OPTIONS_WITH_VALUE = {
+    "env": {"-u", "--unset", "-C", "--chdir"},
+    "timeout": {"-s", "--signal", "-k", "--kill-after"},
+    "nice": {"-n", "--adjustment"},
+    "stdbuf": {"-i", "-o", "-e", "--input", "--output", "--error"},
+    "time": {"-f", "--format", "-o", "--output"},
+    "xargs": {"-I", "-n", "-d", "-L", "-P", "-s", "-a", "-E", "--max-args", "--delimiter", "--max-lines"}
+    | {"--max-procs", "--max-chars", "--arg-file"},
+}
+
+
+def wrapped_command(program: str, args: list):
+    """Return the program and arguments that a wrapper runs, or None."""
+    if program not in WRAPPERS | {"env"} or (program == "command" and args[:1] in (["-v"], ["-V"])):
+        return None
+    takes_value = WRAPPER_OPTIONS_WITH_VALUE.get(program, set())
+    i = 0
+    while i < len(args):
+        word = args[i]
+        if word == "--":
+            i += 1
+            break
+        if word in takes_value:
+            i += 2
+        elif word.startswith("-") or (program == "env" and re.match(r"[A-Za-z_]\w*=", word)):
+            i += 1
+        elif program == "timeout" and re.fullmatch(r"(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?[smhd]?", word):
+            i += 1
+            break
+        else:
+            break
+    if i >= len(args):
+        return None
+    return args[i].lstrip("="), args[i + 1 :]
+
+
+def command_chain(program: str, args: list) -> list:
+    """Return the command followed by the programs its wrappers run, outermost first."""
+    chain = [(program, args)]
+    while (wrapped := wrapped_command(*chain[-1])) is not None:
+        chain.append(wrapped)
+    return chain
+
+
 def git_without_directory(program: str, args: list) -> bool:
     """Tell whether the command runs git, directly or as the program of a wrapper, without -C."""
-    if program == "git":
-        return git_options_without_directory(args)
-    if program not in WRAPPERS | {"env"} or (program == "command" and args[:1] in (["-v"], ["-V"])):
-        return False
-    for i, word in enumerate(args):
-        if word.startswith("-") or re.match(r"[A-Za-z_]\w*=", word) or re.fullmatch(r"\d+(\.\d+)?[smhd]?", word):
-            continue
-        return word.lstrip("=") == "git" and git_options_without_directory(args[i + 1 :])
-    return False
+    program, args = command_chain(program, args)[-1]
+    return program == "git" and git_options_without_directory(args)
+
+
+def denied_command(commands: list, rules: dict):
+    """Return the text of a command, or of a program its wrappers run, that a deny rule matches, or None."""
+    for command in commands:
+        for name, words in command_chain(*program_and_args(command)):
+            text = " ".join([name, *words])
+            if any(match(text) for match in rules["deny"]):
+                return text
+    return None
 
 
 SCOPES = {"subshell", "command_substitution", "process_substitution", "function_definition"}
@@ -254,7 +301,7 @@ def cd_before_git(commands: list) -> bool:
     return False
 
 
-def decisions_for(text: str, rules: dict) -> list:
+def decisions_for(text: str, rules: dict, every_command: bool) -> list:
     source = text.encode("utf-8", "surrogatepass")
     tree = Parser(Language(tree_sitter_bash.language())).parse(source)
     possible = possible_call(text)
@@ -263,6 +310,8 @@ def decisions_for(text: str, rules: dict) -> list:
     decisions = [d for d in (check(n, source, rules, possible) for n in commands) if d]
     if cd_before_git(commands):
         decisions.append(("deny", CD_BEFORE_GIT))
+    if every_command and (denied := denied_command(commands, rules)):
+        decisions.append(("deny", f"Denied by a permission rule: {denied}"))
     unchecked = any(unparsed_substitution(n) for n in all_nodes)
     if possible and (tree.root_node.has_error or any(escaped_backtick(n) for n in all_nodes)):
         unchecked = True
@@ -271,11 +320,11 @@ def decisions_for(text: str, rules: dict) -> list:
     return decisions
 
 
-def decide(text: str, rules_path: str):
+def decide(text: str, rules_path: str, every_command: bool):
     rules = load_rules(rules_path)
-    decisions = decisions_for(text, rules)
+    decisions = decisions_for(text, rules, every_command)
     if "\\\n" in text:
-        decisions += decisions_for(text.replace("\\\n", ""), rules)
+        decisions += decisions_for(text.replace("\\\n", ""), rules, every_command)
     for kind in ("deny", "ask"):
         reasons = [reason for decision, reason in decisions if decision == kind]
         if reasons:
@@ -284,11 +333,20 @@ def decide(text: str, rules_path: str):
 
 
 def main():
+    deny_only = "--deny-only" in sys.argv[2:]
     try:
         text = json.load(sys.stdin).get("tool_input", {}).get("command") or ""
-        decision = decide(text, sys.argv[1])
+        decision = decide(text, sys.argv[1], deny_only)
     except Exception as error:  # noqa: BLE001
-        decision = ("ask", f"The subcommand guard failed ({type(error).__name__}), so this command needs confirmation.")
+        if deny_only:
+            decision = ("deny", f"The subcommand guard failed ({type(error).__name__}), so this command is blocked.")
+        else:
+            decision = (
+                "ask",
+                f"The subcommand guard failed ({type(error).__name__}), so this command needs confirmation.",
+            )
+    if decision and decision[0] != "deny" and deny_only:
+        decision = None
     if decision:
         output = {
             "hookEventName": "PreToolUse",

@@ -128,6 +128,15 @@ def possible_call(text: str) -> bool:
     return re.search(r"(?<![\w.-])(git|gh)(?![\w-])", re.sub(r"\\\n|['\"\\]", "", text)) is not None
 
 
+def expanded_denial(words: list, rules: dict):
+    """Return the git or gh call that a deny rule matches if a command name expands to git or gh, or None."""
+    for program in ("git", "gh"):
+        text = " ".join([program, *words])
+        if any(match(text) for match in rules["deny"]):
+            return text
+    return None
+
+
 def check(command: Node, source: bytes, rules: dict, possible: bool):
     """Return the decision and its reason for one simple command, or None."""
     name = command.child_by_field_name("name")
@@ -139,6 +148,8 @@ def check(command: Node, source: bytes, rules: dict, possible: bool):
     try:
         program = static_value(name).lstrip("=")
     except Undecidable:
+        if denied := expanded_denial([static_or_raw(arg) for arg in args], rules):
+            return "deny", f"Matches a deny rule if the command name expands to git or gh: {denied}"
         if possible or (args and static_or_raw(args[0]).split("=")[0] in GIT_GLOBAL | {"-R", "--repo"}):
             return "ask", "The command name expands, so it could not be checked against the git and gh rules."
         return None
@@ -266,6 +277,8 @@ def denied_command(commands: list, rules: dict):
             text = " ".join([name, *words])
             if any(match(text) for match in rules["deny"]):
                 return text
+            if re.search(r"[$`*?\[]", name) and (denied := expanded_denial(words, rules)):
+                return denied
     return None
 
 

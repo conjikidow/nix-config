@@ -35,7 +35,11 @@
       "$'\\x67it' reset --hard HEAD",
       "git -C /tmp diff; =git -C /tmp reset --hard",
       "=gh -R o/r secret list",
-      "$'gh' secret list"
+      "$'gh' secret list",
+      "G=git; $G stash drop",
+      "$(printf git) reset --hard",
+      "\"$G\" -C r reset -q --hard",
+      "$GH repo delete o/r --yes"
     ],
     "a git call after cd in the same command": [
       "cd x && git status",
@@ -152,7 +156,8 @@
     ],
     "a command name that expands": [
       "$G -C r config core.pager diff",
-      "$(printf git) stash"
+      "$(printf git) stash",
+      "\"$(git rev-parse --show-toplevel)\"/tests/run.sh"
     ],
     "a command that does not parse": [
       "git -C r diff <<EOF",
@@ -292,7 +297,8 @@
         "timeout 1e0 kill 1",
         "xargs --eof kill 1",
         "xargs --replace kill 1",
-        "env env env env env env env env env kill 1"
+        "env env env env env env env env env kill 1",
+        "timeout 5 $G reset --hard"
       ]
     },
     "none": {

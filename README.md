@@ -43,12 +43,13 @@ Open a new shell afterward so that `nix` is available on your `PATH`.
 
 ### 2. Clone Your Repository
 
-Clone your repository using Git and OpenSSH provided through Nix:
+Clone your repository using Git and OpenSSH provided through Nix.
+Any location works; this guide uses `~/.config/home-manager`, the standard location for Home Manager configurations:
 
 ```sh
 nix --extra-experimental-features "nix-command flakes" shell nixpkgs#git nixpkgs#openssh_gssapi \
-  --command git clone git@github.com:conjikidow/nix-config.git
-cd nix-config
+  --command git clone git@github.com:conjikidow/nix-config.git ~/.config/home-manager
+cd ~/.config/home-manager
 ```
 
 ### 3. Configure Your Git Identity

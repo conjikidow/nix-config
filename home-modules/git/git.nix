@@ -23,22 +23,17 @@ in
       user.name = "Riki Nakamura";
       user.email = "riki.nakamura.edu@gmail.com";
 
-      # Add your personal Git configuration below.
-      # The commented lines below are examples. Uncomment and adjust them if you want these preferences.
+      alias = {
+        ch = "checkout";
+        cm = "commit";
+        cr = "clone --recursive";
+        st = "status";
+        sw = "switch";
+      };
 
-      # alias = {
-      #   ch = "checkout";
-      #   cm = "commit";
-      #   cr = "clone --recursive";
-      #   st = "status";
-      #   sw = "switch";
-      # };
+      commit.verbose = true;
 
-      # core.editor = "code --wait";
-
-      # commit.verbose = true;
-
-      # help.autocorrect = 1;
+      help.autocorrect = 1;
 
       # Use SSH for GitHub by default.
       # Comment out this block if you prefer HTTPS with Git Credential Manager or a personal access token.

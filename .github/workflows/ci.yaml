@@ -112,7 +112,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: '0.13.9'
           enable-cache: false
@@ -147,9 +147,9 @@ jobs:
           persist-credentials: false
 
       - name: Audit with zizmor
-        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        uses: zizmorcore/zizmor-action@1b4550e929643b8b26a62303c6bd64814271a4f1 # v0.9.2
         with:
-          version: 'v1.32.0'
+          version: 'v1.33.1'
           advanced-security: false
           annotations: true
 
@@ -158,9 +158,9 @@ jobs:
           always()
           && github.event_name == 'push'
           && github.event.repository.private == false
-        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        uses: zizmorcore/zizmor-action@1b4550e929643b8b26a62303c6bd64814271a4f1 # v0.9.2
         with:
-          version: 'v1.32.0'
+          version: 'v1.33.1'
           advanced-security: true
 
   validate-renovate-config:
@@ -322,7 +322,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: '0.13.9'
           enable-cache: false
@@ -436,7 +436,7 @@ jobs:
           persist-credentials: false
 
       - name: Lint Markdown
-        uses: rvben/rumdl@ba563d6780c6119bd526c869a730b492c1ad54e5 # v0.3.5
+        uses: rvben/rumdl@8c360f36fec04dc001084f05b52d739b6ff66764 # v0.3.6
         with:
           version: '0.3.5'
           report-type: annotations
@@ -460,7 +460,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -500,7 +500,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -544,7 +544,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: '0.13.9'
           enable-cache: false
@@ -587,7 +587,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: '0.13.9'
           enable-cache: false
@@ -658,7 +658,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: '0.13.9'
           enable-cache: false
@@ -775,7 +775,7 @@ jobs:
       - name: Install Commitizen
         uses: commitizen-tools/setup-cz@96c75e6ae9632047f2c9b4025b9dd1624b40de8f # v0.9.1
         with:
-          version: '4.19.4'
+          version: '4.20.1'
           python-version: '3.x'
 
       - name: Lint commit messages (push)
@@ -810,7 +810,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
